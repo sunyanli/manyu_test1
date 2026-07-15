@@ -1,90 +1,203 @@
 /**
- * 框架检测器 - 自动识别项目使用的测试框架
+ * 测试框架检测器
+ * 实现 FR1.1 自动识别优先级
  */
 
-import { TestFramework } from './types/index';
+import * as fs from 'fs';
+import * as path from 'path';
 
-export interface FrameworkInfo {
-  framework: TestFramework;
+export interface DetectedFramework {
+  framework: 'jest' | 'vitest' | 'pytest' | 'junit';
   command: string;
-  configFiles: string[];
-  version?: string;
+  resultFile: string;
 }
 
+const CONFIG_PATTERNS = {
+  jest: ['jest.config.js', 'jest.config.ts', 'jest.config.json', 'jest.config.mjs', 'jest.config.cjs'],
+  vitest: ['vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs'],
+  pytest: ['pytest.ini', 'pyproject.toml', 'setup.cfg'],
+};
+
 export class FrameworkDetector {
+  private projectRoot: string;
+
+  constructor(projectRoot?: string) {
+    this.projectRoot = projectRoot || process.cwd();
+  }
+
   /**
-   * 检测项目使用的测试框架
+   * 检测测试框架
+   * 优先级: a. 用户显式指定 > b. package.json scripts.test > c. 框架特征文件推断
    */
-  async detect(projectRoot: string): Promise<FrameworkInfo | null> {
-    // Jest 检测
-    const jestInfo = this.detectJest(projectRoot);
-    if (jestInfo) return jestInfo;
+  detect(testCommand?: string): DetectedFramework | null {
+    // 优先级 a: 用户显式指定
+    if (testCommand) {
+      return this.detectFromCommand(testCommand);
+    }
 
-    // Vitest 检测
-    const vitestInfo = this.detectVitest(projectRoot);
-    if (vitestInfo) return vitestInfo;
+    // 优先级 b: package.json scripts.test
+    const pkgResult = this.detectFromPackageJson();
+    if (pkgResult) return pkgResult;
 
-    // pytest 检测
-    const pytestInfo = this.detectPytest(projectRoot);
-    if (pytestInfo) return pytestInfo;
+    // 优先级 c: 框架特征文件推断
+    const configResult = this.detectFromConfigFiles();
+    if (configResult) return configResult;
+
+    // Python 项目检测
+    const pyResult = this.detectPythonProject();
+    if (pyResult) return pyResult;
 
     return null;
   }
 
-  private detectJest(projectRoot: string): FrameworkInfo | null {
-    const configFiles = [
-      'jest.config.js',
-      'jest.config.ts',
-      'jest.config.json',
-      'jest.config.mjs',
-    ];
-
-    // 简化检测逻辑（实际运行时需要 fs 检查）
-    return {
-      framework: 'jest',
-      command: 'npx jest --json --outputFile=test-results.json',
-      configFiles,
-    };
-  }
-
-  private detectVitest(projectRoot: string): FrameworkInfo | null {
-    const configFiles = [
-      'vitest.config.ts',
-      'vitest.config.js',
-      'vite.config.ts',
-    ];
-
-    return {
-      framework: 'vitest',
-      command: 'npx vitest run --reporter=json --outputFile=test-results.json',
-      configFiles,
-    };
-  }
-
-  private detectPytest(projectRoot: string): FrameworkInfo | null {
-    const configFiles = [
-      'pytest.ini',
-      'pyproject.toml',
-      'setup.cfg',
-    ];
-
-    return {
-      framework: 'pytest',
-      command: 'pytest --junit-xml=junit.xml',
-      configFiles,
-    };
-  }
-
   /**
-   * 根据文件路径推断框架
+   * 从文件路径推断框架类型（解析模式）
    */
-  inferFromFile(filePath: string): TestFramework {
-    if (filePath.includes('jest')) return 'jest';
-    if (filePath.includes('vitest')) return 'vitest';
-    if (filePath.includes('pytest') || filePath.endsWith('.py')) return 'pytest';
-    if (filePath.includes('junit') || filePath.endsWith('.xml')) return 'junit';
-    return 'unknown';
+  inferFromFile(filePath: string): string {
+    const lower = filePath.toLowerCase();
+    
+    if (lower.includes('jest') || lower.endsWith('.json')) {
+      return 'jest';
+    }
+    
+    if (lower.includes('vitest')) {
+      return 'vitest';
+    }
+    
+    if (lower.includes('pytest') || lower.includes('junit')) {
+      return 'junit';
+    }
+    
+    // 默认基于扩展名
+    if (lower.endsWith('.json')) {
+      return 'jest';
+    }
+    
+    return 'junit';
+  }
+
+  private detectFromCommand(command: string): DetectedFramework {
+    const cmd = command.toLowerCase();
+
+    if (cmd.includes('jest')) {
+      return {
+        framework: 'jest',
+        command: command,
+        resultFile: path.join(this.projectRoot, 'test-results', 'jest-results.json'),
+      };
+    }
+
+    if (cmd.includes('vitest')) {
+      return {
+        framework: 'vitest',
+        command: command,
+        resultFile: path.join(this.projectRoot, 'test-results', 'vitest-results.json'),
+      };
+    }
+
+    if (cmd.includes('pytest')) {
+      return {
+        framework: 'pytest',
+        command: command,
+        resultFile: path.join(this.projectRoot, 'test-results', 'pytest-results.xml'),
+      };
+    }
+
+    return {
+      framework: 'junit',
+      command: command,
+      resultFile: path.join(this.projectRoot, 'test-results', 'junit.xml'),
+    };
+  }
+
+  private detectFromPackageJson(): DetectedFramework | null {
+    const pkgPath = path.join(this.projectRoot, 'package.json');
+    
+    if (!fs.existsSync(pkgPath)) {
+      return null;
+    }
+
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+      const testScript = pkg.scripts?.test || '';
+
+      // Jest 优先
+      if (deps.jest || testScript.includes('jest')) {
+        return {
+          framework: 'jest',
+          command: 'npx jest --json --outputFile=test-results/jest-results.json',
+          resultFile: path.join(this.projectRoot, 'test-results', 'jest-results.json'),
+        };
+      }
+
+      // Vitest
+      if (deps.vitest || testScript.includes('vitest')) {
+        return {
+          framework: 'vitest',
+          command: 'npx vitest run --reporter=json --outputFile=test-results/vitest-results.json',
+          resultFile: path.join(this.projectRoot, 'test-results', 'vitest-results.json'),
+        };
+      }
+
+      // 使用 test script
+      if (testScript) {
+        return {
+          framework: 'jest',
+          command: 'npm test -- --json --outputFile=test-results/jest-results.json',
+          resultFile: path.join(this.projectRoot, 'test-results', 'jest-results.json'),
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    return null;
+  }
+
+  private detectFromConfigFiles(): DetectedFramework | null {
+    // Jest 配置文件
+    if (this.hasConfigFiles(CONFIG_PATTERNS.jest)) {
+      return {
+        framework: 'jest',
+        command: 'npx jest --json --outputFile=test-results/jest-results.json',
+        resultFile: path.join(this.projectRoot, 'test-results', 'jest-results.json'),
+      };
+    }
+
+    // Vitest 配置文件
+    if (this.hasConfigFiles(CONFIG_PATTERNS.vitest)) {
+      return {
+        framework: 'vitest',
+        command: 'npx vitest run --reporter=json --outputFile=test-results/vitest-results.json',
+        resultFile: path.join(this.projectRoot, 'test-results', 'vitest-results.json'),
+      };
+    }
+
+    return null;
+  }
+
+  private detectPythonProject(): DetectedFramework | null {
+    const pyproject = path.join(this.projectRoot, 'pyproject.toml');
+    const pytestIni = path.join(this.projectRoot, 'pytest.ini');
+
+    if (fs.existsSync(pyproject) || fs.existsSync(pytestIni)) {
+      return {
+        framework: 'pytest',
+        command: 'pytest --junitxml=test-results/pytest-results.xml',
+        resultFile: path.join(this.projectRoot, 'test-results', 'pytest-results.xml'),
+      };
+    }
+
+    return null;
+  }
+
+  private hasConfigFiles(patterns: string[]): boolean {
+    for (const pattern of patterns) {
+      if (fs.existsSync(path.join(this.projectRoot, pattern))) {
+        return true;
+      }
+    }
+    return false;
   }
 }
-
-export const frameworkDetector = new FrameworkDetector();
