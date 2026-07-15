@@ -1,0 +1,1 @@
+import{_ as s,o as r,c as t,a as o}from"./index-he6LudqQ.js";const n={},c={class:"employee-form"};function a(l,e){return r(),t("div",c,[...e[0]||(e[0]=[o("h2",null,"员工表单",-1),o("p",null,"占位组件 - 员工新增/编辑页面（后续实现）",-1)])])}const m=s(n,[["render",a]]);export{m as default};

@@ -1,0 +1,1 @@
+import{_ as o,o as t,c as n,a as s}from"./index-he6LudqQ.js";const c={},l={class:"employee-list"};function r(a,e){return t(),n("div",l,[...e[0]||(e[0]=[s("h2",null,"员工列表",-1),s("p",null,"占位组件 - 员工列表页面（后续实现）",-1)])])}const i=o(c,[["render",r]]);export{i as default};
