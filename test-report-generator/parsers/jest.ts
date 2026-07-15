@@ -3,8 +3,8 @@
  * 解析 Jest --json 输出格式
  */
 
-import * as fs from 'fs';
-import { TestReport, TestStats, TestCaseResult, TestFileResult, ExecutionEnv, CoverageData, TestResultParser } from '../types';
+import { TestReport, TestStats, TestCaseResult, TestFileResult, ExecutionEnv, CoverageData, CoverageFileDetail, TestResultParser } from '../types';
+import { truncateMessage, truncateStack, calculateStats } from './utils';
 
 interface JestAssertionResult {
   ancestorTitles: string[];
@@ -89,7 +89,7 @@ const parser: TestResultParser = {
       failed: data.numFailedTests,
       skipped: data.numPendingTests,
       passRate: data.numTotalTests > 0 ? Math.round((data.numPassedTests / data.numTotalTests) * 100) : 0,
-      duration: Date.now() - data.startTime
+      duration: files.reduce((sum, f) => sum + f.stats.duration, 0)
     };
     
     const coverage = extractCoverage(data);
@@ -101,7 +101,7 @@ const parser: TestResultParser = {
     };
     
     return {
-      version: '1.0.0',
+      version: '2.0.0',
       env,
       summary,
       files,
@@ -113,14 +113,6 @@ const parser: TestResultParser = {
   }
 };
 
-function calculateStats(cases: TestCaseResult[]): TestStats {
-  const total = cases.length;
-  const passed = cases.filter(c => c.status === 'passed').length;
-  const failed = cases.filter(c => c.status === 'failed').length;
-  const skipped = cases.filter(c => c.status === 'skipped').length;
-  const duration = cases.reduce((sum, c) => sum + c.duration, 0);
-  return { total, passed, failed, skipped, passRate: total > 0 ? Math.round((passed / total) * 100) : 0, duration };
-}
 
 function extractCoverage(data: JestJSONOutput): CoverageData {
   if (!data.coverageMap) {
@@ -131,8 +123,10 @@ function extractCoverage(data: JestJSONOutput): CoverageData {
   let totalStatements = 0, coveredStatements = 0;
   let totalBranches = 0, coveredBranches = 0;
   let totalFunctions = 0, coveredFunctions = 0;
+  const lowCoverageFiles: CoverageFileDetail[] = [];
+  const threshold = 50; // 默认阈值 50%
   
-  for (const fileCoverage of Object.values(data.coverageMap)) {
+  for (const [filePath, fileCoverage] of Object.entries(data.coverageMap)) {
     totalLines += fileCoverage.lines.total;
     coveredLines += fileCoverage.lines.covered;
     totalStatements += fileCoverage.statements.total;
@@ -141,6 +135,21 @@ function extractCoverage(data: JestJSONOutput): CoverageData {
     coveredBranches += fileCoverage.branches.covered;
     totalFunctions += fileCoverage.functions.total;
     coveredFunctions += fileCoverage.functions.covered;
+    
+    const fileLines = fileCoverage.lines.total > 0 ? Math.round((fileCoverage.lines.covered / fileCoverage.lines.total) * 100) : 0;
+    const fileStatements = fileCoverage.statements.total > 0 ? Math.round((fileCoverage.statements.covered / fileCoverage.statements.total) * 100) : 0;
+    const fileBranches = fileCoverage.branches.total > 0 ? Math.round((fileCoverage.branches.covered / fileCoverage.branches.total) * 100) : 0;
+    const fileFunctions = fileCoverage.functions.total > 0 ? Math.round((fileCoverage.functions.covered / fileCoverage.functions.total) * 100) : 0;
+    
+    if (fileStatements < threshold || fileBranches < threshold || fileFunctions < threshold || fileLines < threshold) {
+      lowCoverageFiles.push({
+        file: filePath,
+        statements: fileStatements,
+        branches: fileBranches,
+        functions: fileFunctions,
+        lines: fileLines,
+      });
+    }
   }
   
   return {
@@ -148,7 +157,8 @@ function extractCoverage(data: JestJSONOutput): CoverageData {
     statements: totalStatements > 0 ? Math.round((coveredStatements / totalStatements) * 100) : 0,
     branches: totalBranches > 0 ? Math.round((coveredBranches / totalBranches) * 100) : 0,
     functions: totalFunctions > 0 ? Math.round((coveredFunctions / totalFunctions) * 100) : 0,
-    available: true
+    available: true,
+    lowCoverageFiles: lowCoverageFiles.length > 0 ? lowCoverageFiles : undefined,
   };
 }
 
@@ -158,120 +168,6 @@ function extractErrorInfo(fullMessage: string): { message: string; stack?: strin
   const stackLines = lines.slice(1).join('\n').trim();
   const stack = stackLines ? truncateStack(stackLines, 10) : undefined;
   return { message, stack };
-}
-
-function truncateMessage(message: string, maxLength: number): string {
-  if (message.length <= maxLength) return message;
-  return message.slice(0, maxLength) + '... (截断)';
-}
-
-function truncateStack(stack: string, maxLines: number): string {
-  const lines = stack.split('\n');
-  if (lines.length <= maxLines) return stack;
-  return lines.slice(0, maxLines).join('\n') + '\n... (截断)';
-}
-
-// ========== Coverage 解析 ==========
-
-interface IstanbulFileCoverage {
-  s: Record<string, number>;
-  b: Record<string, number[]>;
-  f: Record<string, number>;
-  statementMap: Record<string, { start: { line: number; column: number }; end: { line: number; column: number } }>;
-}
-
-type IstanbulCoverageMap = Record<string, IstanbulFileCoverage>;
-
-export interface CoverageFileDetail {
-  file: string;
-  statements: number;
-  branches: number;
-  functions: number;
-  lines: number;
-}
-
-export interface CoverageResult {
-  summary: CoverageData;
-  lowCoverageFiles: CoverageFileDetail[];
-}
-
-export function parseCoverage(coverageDir?: string): CoverageResult | null {
-  const dir = coverageDir || 'coverage';
-  const coveragePath = `${dir}/coverage-final.json`;
-
-  let raw: string;
-  try {
-    raw = fs.readFileSync(coveragePath, 'utf-8');
-  } catch {
-    return null;
-  }
-
-  let data: IstanbulCoverageMap;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-
-  const fileDetails: CoverageFileDetail[] = [];
-  let totalStatements = 0, coveredStatements = 0;
-  let totalBranches = 0, coveredBranches = 0;
-  let totalFunctions = 0, coveredFunctions = 0;
-  let totalLines = 0, coveredLines = 0;
-
-  for (const [filePath, fc] of Object.entries(data)) {
-    const stmtKeys = Object.keys(fc.s);
-    const stmtCovered = stmtKeys.filter(k => fc.s[k] > 0).length;
-    totalStatements += stmtKeys.length;
-    coveredStatements += stmtCovered;
-
-    const branchKeys = Object.keys(fc.b);
-    const branchCovered = branchKeys.filter(k => fc.b[k].some(v => v > 0)).length;
-    totalBranches += branchKeys.length;
-    coveredBranches += branchCovered;
-
-    const funcKeys = Object.keys(fc.f);
-    const funcCovered = funcKeys.filter(k => fc.f[k] > 0).length;
-    totalFunctions += funcKeys.length;
-    coveredFunctions += funcCovered;
-
-    const allLines = new Set<number>();
-    const coveredLineSet = new Set<number>();
-    for (const key of stmtKeys) {
-      const sm = fc.statementMap[key];
-      if (sm) {
-        for (let l = sm.start.line; l <= sm.end.line; l++) {
-          allLines.add(l);
-          if (fc.s[key] > 0) coveredLineSet.add(l);
-        }
-      }
-    }
-    totalLines += allLines.size;
-    coveredLines += coveredLineSet.size;
-
-    fileDetails.push({
-      file: filePath,
-      statements: stmtKeys.length > 0 ? Math.round((stmtCovered / stmtKeys.length) * 100) : 0,
-      branches: branchKeys.length > 0 ? Math.round((branchCovered / branchKeys.length) * 100) : 0,
-      functions: funcKeys.length > 0 ? Math.round((funcCovered / funcKeys.length) * 100) : 0,
-      lines: allLines.size > 0 ? Math.round((coveredLineSet.size / allLines.size) * 100) : 0,
-    });
-  }
-
-  const lowCoverageFiles = fileDetails.filter(
-    f => f.statements < 50 || f.branches < 50 || f.functions < 50 || f.lines < 50
-  );
-
-  return {
-    summary: {
-      statements: totalStatements > 0 ? Math.round((coveredStatements / totalStatements) * 100) : 0,
-      branches: totalBranches > 0 ? Math.round((coveredBranches / totalBranches) * 100) : 0,
-      functions: totalFunctions > 0 ? Math.round((coveredFunctions / totalFunctions) * 100) : 0,
-      lines: totalLines > 0 ? Math.round((coveredLines / totalLines) * 100) : 0,
-      available: true,
-    },
-    lowCoverageFiles,
-  };
 }
 
 export default parser;

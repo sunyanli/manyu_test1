@@ -3,12 +3,16 @@
  * 生成符合 FR2 标准结构的 Markdown 测试报告
  */
 
-import { TestReport, TestStats, TestCaseResult, TestFileResult } from '../types';
+import { TestReport, TestStats, TestCaseResult, TestFileResult, CoverageFileDetail } from '../types';
+
+export interface MarkdownReportOptions {
+  failThreshold?: number;
+}
 
 /**
  * 生成 Markdown 测试报告
  */
-export function generateMarkdownReport(report: TestReport): string {
+export function generateMarkdownReport(report: TestReport, options?: MarkdownReportOptions): string {
   const lines: string[] = [];
   
   // 报告头
