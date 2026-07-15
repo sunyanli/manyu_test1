@@ -1,0 +1,60 @@
+{
+  "task_id": "DEV-807ac241-7ff9-11f1-a7aa-992f2a416e13-da70605b-c719-4859-a746-1a1a582be551",
+  "stage": "review",
+  "review_date": "2026-07-15",
+  "blocker_count": 3,
+  "warning_count": 4,
+  "review_summary": {
+    "overall_status": "conditional_pass",
+    "p0_issues": 3,
+    "p1_issues": 4,
+    "test_coverage": "20%",
+    "security_risks": "sensitive_data_exposure"
+  },
+  "blockers": [
+    {
+      "id": "B1",
+      "description": "执行模式未完整实现",
+      "location": "index.ts",
+      "impact": "违反FR1.3核心需求"
+    },
+    {
+      "id": "B2",
+      "description": "错误堆栈未脱敏",
+      "location": "markdown.ts",
+      "impact": "违反NFR3安全要求"
+    },
+    {
+      "id": "B3",
+      "description": "解析错误信息丢失",
+      "location": "jest-vitest.ts:88",
+      "impact": "违反NFR2健壮性要求"
+    }
+  ],
+  "warnings": [
+    {
+      "id": "W1",
+      "description": "用例明细无截断逻辑",
+      "location": "markdown.ts",
+      "impact": "超大报告性能问题"
+    },
+    {
+      "id": "W2",
+      "description": "resultFormat未使用",
+      "location": "index.ts",
+      "impact": "架构设计不一致"
+    },
+    {
+      "id": "W3",
+      "description": "覆盖率阈值未实现",
+      "location": "types.ts",
+      "impact": "缺失P1功能"
+    },
+    {
+      "id": "W4",
+      "description": "缺少单元测试",
+      "location": "tests/",
+      "impact": "无法验证功能正确性"
+    }
+  ]
+}
