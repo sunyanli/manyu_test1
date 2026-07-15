@@ -1,0 +1,34 @@
+{
+  "success": true,
+  "testResults": [
+    {
+      "name": "src/utils.test.ts",
+      "assertionResults": [
+        {
+          "fullName": "add function should sum two numbers",
+          "status": "passed",
+          "duration": 15
+        },
+        {
+          "fullName": "subtract function should work correctly",
+          "status": "passed",
+          "duration": 10
+        },
+        {
+          "fullName": "divide by zero should throw error",
+          "status": "failed",
+          "duration": 5,
+          "failureMessages": ["Error: Division by zero\n    at divide (src/utils.ts:10:11)\n    at Object.<anonymous> (src/utils.test.ts:25:5)"]
+        }
+      ]
+    }
+  ],
+  "coverageMap": {
+    "src/utils.ts": {
+      "l": { "1": 10, "2": 10, "3": 8, "10": 5 },
+      "f": { "1": 10, "2": 8, "3": 5 },
+      "s": { "1": 10, "2": 10, "3": 8 },
+      "b": { "1": [5, 3] }
+    }
+  }
+}

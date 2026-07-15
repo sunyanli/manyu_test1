@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="src/utils.test.ts" tests="3" failures="1" time="0.05">
+    <testcase name="add function should sum two numbers" classname="utils" time="0.015"/>
+    <testcase name="subtract function should work correctly" classname="utils" time="0.010"/>
+    <testcase name="divide by zero should throw error" classname="utils" time="0.005">
+      <failure message="Error: Division by zero">
+        Error: Division by zero
+        at divide (src/utils.ts:10:11)
+        at Object.&lt;anonymous&gt; (src/utils.test.ts:25:5)
+      </failure>
+    </testcase>
+  </testsuite>
+</testsuites>
