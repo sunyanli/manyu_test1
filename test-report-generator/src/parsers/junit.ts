@@ -119,7 +119,8 @@ export const junitParser = {
             suite: suite.name,
             file: suite.file,
             status: 'passed',
-            duration: parseFloat(caseData.attrs.time) * 1000 || 0
+            duration: parseFloat(caseData.attrs.time) * 1000 || 0,
+            failureMessages: []
           };
           
           total++;
@@ -127,9 +128,7 @@ export const junitParser = {
           if (caseData.failure) {
             testCase.status = 'failed';
             failed++;
-            testCase.error = {
-              message: caseData.failureMessage || 'Test failed'
-            };
+            testCase.failureMessages = [caseData.failureMessage || 'Test failed'];
           } else if (caseData.skipped) {
             testCase.status = 'skipped';
             skipped++;

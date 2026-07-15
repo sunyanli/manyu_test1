@@ -6,9 +6,11 @@ import { TestResult, ReportConfig, ParseResult, TestResultParser } from './types
 import { jestParser } from './parsers/jest';
 import { vitestParser } from './parsers/vitest';
 import { junitParser } from './parsers/junit';
+import { pytestParser } from './parsers/pytest';
 import { generateMarkdownReport } from './report/markdown';
+import { runTestsAndGenerateReport, parseResultFile } from '../executor';
 
-const parsers: TestResultParser[] = [jestParser, vitestParser, junitParser];
+const parsers: TestResultParser[] = [jestParser, vitestParser, junitParser, pytestParser];
 
 /**
  * 自动检测测试框架和执行命令
@@ -70,4 +72,9 @@ export { TestResult, ReportConfig, ParseResult, TestResultParser } from './types
 export { jestParser } from './parsers/jest';
 export { vitestParser } from './parsers/vitest';
 export { junitParser } from './parsers/junit';
+export { pytestParser } from './parsers/pytest';
 export { generateMarkdownReport } from './report/markdown';
+export { generateHtmlReport } from './report/html';
+export { generateJsonReport } from './report/json';
+export { parseCoverageData } from './report/coverage';
+export { runTestsAndGenerateReport, parseResultFile };

@@ -5,7 +5,7 @@
 
 import { TestResult, TestCaseResult } from '../types';
 
-export function generateMarkdownReport(result: TestResult): string {
+export function generateMarkdownReport(result: TestResult, failThreshold?: number): string {
   const lines: string[] = [];
   const timestamp = new Date(result.timestamp).toLocaleString('zh-CN', {
     year: 'numeric',
@@ -32,7 +32,7 @@ export function generateMarkdownReport(result: TestResult): string {
   lines.push(``);
   lines.push(`| 指标 | 数值 |`);
   lines.push(`|------|------|`);
-  lines.push(`| 整体结论 | ${result.success ? '✅ 通过' : '❌ 失败'} |`);
+  lines.push(`| 整体结论 | ${renderConclusion(result, failThreshold)} |`);
   lines.push(`| 用例总数 | ${result.total} |`);
   lines.push(`| 通过数 | ${result.passed} |`);
   lines.push(`| 失败数 | ${result.failed} |`);
@@ -66,15 +66,15 @@ export function generateMarkdownReport(result: TestResult): string {
       lines.push(`- **所属套件**: ${tc.suite || 'N/A'}`);
       lines.push(`- **耗时**: ${formatDuration(tc.duration)}`);
       lines.push(``);
-      if (tc.error) {
+      if (tc.failureMessages && tc.failureMessages.length > 0) {
         lines.push(`**错误信息**:`);
         lines.push(``);
         lines.push('```');
-        lines.push(tc.error.message);
-        if (tc.error.stack) {
+        lines.push(tc.failureMessages[0]);
+        if (tc.stackTrace) {
           lines.push(``);
           lines.push(`堆栈摘要:`);
-          const stackLines = tc.error.stack.split('\n').slice(0, 10);
+          const stackLines = tc.stackTrace.split('\n').slice(0, 10);
           lines.push(...stackLines);
         }
         lines.push('```');
@@ -181,6 +181,13 @@ export function generateMarkdownReport(result: TestResult): string {
   lines.push(`*报告生成时间: ${timestamp}*`);
   
   return lines.join('\n');
+}
+
+function renderConclusion(result: TestResult, failThreshold?: number): string {
+  if (failThreshold !== undefined && result.passRate < failThreshold) {
+    return '❌ 不达标';
+  }
+  return result.success ? '✅ 通过' : '❌ 失败';
 }
 
 function formatDuration(ms: number): string {

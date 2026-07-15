@@ -9,12 +9,10 @@ export interface TestCaseResult {
   file: string;
   status: 'passed' | 'failed' | 'skipped' | 'pending';
   duration: number;
-  error?: {
-    message: string;
-    stack?: string;
-    expected?: string;
-    actual?: string;
-  };
+  /** 失败信息列表（兼容各框架的错误格式） */
+  failureMessages: string[];
+  /** 堆栈跟踪（可选） */
+  stackTrace?: string;
 }
 
 /** 测试套件结果 */

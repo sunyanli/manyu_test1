@@ -2,12 +2,13 @@
  * 测试执行与框架自动检测
  */
 
-import { TestReportOptions, TestReport, TestResultParser } from './types';
-import jestParser from './parsers/jest';
-import vitestParser from './parsers/vitest';
-import junitParser from './parsers/junit';
+import { ReportConfig, TestResult, TestResultParser } from './src/types';
+import { jestParser } from './src/parsers/jest';
+import { vitestParser } from './src/parsers/vitest';
+import { junitParser } from './src/parsers/junit';
+import { pytestParser } from './src/parsers/pytest';
 
-const parsers: TestResultParser[] = [jestParser, vitestParser, junitParser];
+const parsers: TestResultParser[] = [jestParser, vitestParser, junitParser, pytestParser];
 
 /**
  * 检测项目使用的测试框架
@@ -32,6 +33,20 @@ export async function detectTestFramework(): Promise<{ framework: string; comman
     detected.push({ framework: 'vitest', command: 'npx vitest run --reporter=json --outputFile=test-results.json' });
   }
   
+  // 检测 pytest
+  const hasPytestConfig = await fileExists('pyproject.toml') || await fileExists('pytest.ini');
+  if (hasPytestConfig) {
+    // 检查 pyproject.toml 是否包含 [tool.pytest]
+    if (await fileExists('pyproject.toml')) {
+      const tomlContent = await readFile('pyproject.toml');
+      if (tomlContent.includes('[tool.pytest]')) {
+        detected.push({ framework: 'pytest', command: 'pytest --junitxml=test-results.xml' });
+      }
+    } else if (await fileExists('pytest.ini')) {
+      detected.push({ framework: 'pytest', command: 'pytest --junitxml=test-results.xml' });
+    }
+  }
+
   // 默认：如果没检测到，假设是 Jest
   if (detected.length === 0) {
     detected.push({ framework: 'jest', command: 'npx jest --json --outputFile=test-results.json' });
@@ -43,7 +58,7 @@ export async function detectTestFramework(): Promise<{ framework: string; comman
 /**
  * 解析已有的测试结果文件
  */
-export async function parseResultFile(filePath: string): Promise<TestReport> {
+export async function parseResultFile(filePath: string): Promise<TestResult> {
   const content = await readFile(filePath);
   
   for (const parser of parsers) {
@@ -58,7 +73,7 @@ export async function parseResultFile(filePath: string): Promise<TestReport> {
 /**
  * 执行测试并生成报告
  */
-export async function runTestsAndGenerateReport(options: TestReportOptions): Promise<TestReport> {
+export async function runTestsAndGenerateReport(options: ReportConfig): Promise<TestResult> {
   // 解析模式
   if (options.resultFile) {
     return parseResultFile(options.resultFile);

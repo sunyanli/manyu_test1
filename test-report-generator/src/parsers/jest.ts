@@ -39,14 +39,15 @@ export const jestParser = {
             suite: assertion.ancestorTitles?.join(' > ') || '',
             file: testResult.name || '',
             status: assertion.status || 'pending',
-            duration: assertion.duration || 0
+            duration: assertion.duration || 0,
+            failureMessages: []
           };
           
           if (assertion.status === 'failed' && assertion.failureMessages?.length > 0) {
-            testCase.error = {
-              message: assertion.failureMessages[0],
-              stack: assertion.failureMessages.join('\n')
-            };
+            testCase.failureMessages = assertion.failureMessages;
+            testCase.stackTrace = assertion.failureMessages.join('\n');
+          } else {
+            testCase.failureMessages = [];
           }
           
           suite.testCases.push(testCase);

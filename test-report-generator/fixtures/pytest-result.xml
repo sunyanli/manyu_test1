@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="test_math" tests="4" failures="1" errors="0" skipped="1" time="0.35" timestamp="2024-07-15T10:00:00.000000" hostname="runner">
+    <testcase classname="test_math.TestMath" name="test_add" time="0.05"/>
+    <testcase classname="test_math.TestMath" name="test_subtract" time="0.03"/>
+    <testcase classname="test_math.TestMath" name="test_divide" time="0.12">
+      <failure message="ZeroDivisionError: division by zero">def test_divide():
+&gt;       assert 1 / 0 == 0
+E       ZeroDivisionError: division by zero
+
+test_math.py:15: ZeroDivisionError</failure>
+    </testcase>
+    <testcase classname="test_math.TestMath" name="test_multiply" time="0.00">
+      <skipped message="not implemented yet" type="skip"/>
+    </testcase>
+  </testsuite>
+  <testsuite name="test_string" tests="3" failures="0" errors="0" skipped="0" time="0.18" timestamp="2024-07-15T10:00:00.000000" hostname="runner">
+    <testcase classname="test_string.TestString" name="test_upper" time="0.02"/>
+    <testcase classname="test_string.TestString" name="test_lower" time="0.01"/>
+    <testcase classname="test_string.TestString" name="test_split" time="0.04"/>
+  </testsuite>
+  <testsuite name="test_async" tests="2" failures="1" errors="0" skipped="0" time="0.22" timestamp="2024-07-15T10:00:00.000000" hostname="runner">
+    <testcase classname="test_async.TestAsync" name="test_fetch_data" time="0.10"/>
+    <testcase classname="test_async.TestAsync" name="test_timeout" time="0.12">
+      <failure message="TimeoutError: request timed out">async def test_timeout():
+&gt;       await asyncio.sleep(2)
+E       Failed: TimeoutError: request timed out
+
+test_async.py:22: TimeoutError</failure>
+    </testcase>
+  </testsuite>
+</testsuites>
