@@ -48,7 +48,8 @@ export const vitestParser = {
             suite: test.suiteName || '',
             file: suite.file,
             status: test.status || 'pending',
-            duration: test.duration || 0
+            duration: test.duration || 0,
+            failureMessages: []
           };
           
           total++;
@@ -56,10 +57,10 @@ export const vitestParser = {
           else if (testCase.status === 'failed') {
             failed++;
             if (test.error) {
-              testCase.error = {
-                message: test.error.message || String(test.error),
-                stack: test.error.stack
-              };
+              testCase.failureMessages = [test.error.message || String(test.error)];
+              testCase.stackTrace = test.error.stack;
+            } else {
+              testCase.failureMessages = [];
             }
           }
           else if (testCase.status === 'skipped') skipped++;

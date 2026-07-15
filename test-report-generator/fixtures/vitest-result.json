@@ -1,0 +1,30 @@
+{
+  "testResults": [
+    {
+      "name": "src/utils/calculator.test.ts",
+      "filepath": "/home/runner/work/my-project/src/utils/calculator.test.ts",
+      "duration": 180,
+      "tests": [
+        {
+          "name": "should add two numbers",
+          "suiteName": "Calculator",
+          "status": "passed",
+          "duration": 12
+        },
+        {
+          "name": "should subtract two numbers",
+          "suiteName": "Calculator",
+          "status": "passed",
+          "duration": 8
+        },
+        {
+          "name": "should multiply two numbers",
+          "suiteName": "Calculator",
+          "status": "failed",
+          "duration": 45,
+          "error": "AssertionError: expected 5 to be 6\n    at /home/runner/work/my-project/src/utils/calculator.test.ts:25:30"
+        }
+      ]
+    }
+  ]
+}
