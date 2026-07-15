@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "numTotalTests": 3,
+  "numPassedTests": 2,
+  "numFailedTests": 1,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "startTime": 1721016000000,
+  "testResults": [
+    {
+      "name": "src/utils/calculator.test.ts",
+      "perfStats": { "runtime": 150 },
+      "assertionResults": [
+        {
+          "title": "should add two numbers",
+          "status": "passed",
+          "duration": 20,
+          "ancestorTitles": ["Calculator"]
+        },
+        {
+          "title": "should subtract two numbers",
+          "status": "passed",
+          "duration": 15,
+          "ancestorTitles": ["Calculator"]
+        },
+        {
+          "title": "should multiply two numbers",
+          "status": "failed",
+          "duration": 50,
+          "ancestorTitles": ["Calculator"],
+          "failureMessages": ["Expected 6 but received 5"]
+        }
+      ]
+    }
+  ]
+}
