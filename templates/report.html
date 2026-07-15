@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务成功率报告 — {{ report.date }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fa; color: #333; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px 32px; }
+        .header h1 { font-size: 24px; margin-bottom: 4px; }
+        .header .date { opacity: 0.85; font-size: 14px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; padding: 24px 32px; }
+        .card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; }
+        .card .label { font-size: 13px; color: #888; margin-bottom: 6px; }
+        .card .value { font-size: 28px; font-weight: 700; }
+        .card.success .value { color: #52c41a; }
+        .card.failed .value { color: #ff4d4f; }
+        .card.running .value { color: #1890ff; }
+        .card.total .value { color: #333; }
+        .card.rate .value { color: #722ed1; }
+        .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 32px 24px; }
+        .chart-box { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .chart-box.full { grid-column: 1 / -1; }
+        .chart-box h3 { font-size: 16px; margin-bottom: 12px; color: #555; }
+        .chart { width: 100%; height: 350px; }
+        .chart.full-width { height: 400px; }
+        .table-wrap { padding: 0 32px 32px; }
+        .table-wrap h3 { font-size: 16px; margin-bottom: 12px; color: #555; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { background: #fafafa; font-weight: 600; font-size: 13px; color: #888; }
+        td { font-size: 14px; }
+        @media (max-width: 768px) { .charts { grid-template-columns: 1fr; } .cards { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 任务成功率报告</h1>
+        <div class="date">{{ report.date }}</div>
+    </div>
+    <div class="cards">
+        <div class="card total"><div class="label">任务总数</div><div class="value">{{ report.total }}</div></div>
+        <div class="card success"><div class="label">成功</div><div class="value">{{ report.success }}</div></div>
+        <div class="card failed"><div class="label">失败</div><div class="value">{{ report.failed }}</div></div>
+        <div class="card running"><div class="label">运行中</div><div class="value">{{ report.running }}</div></div>
+        <div class="card rate"><div class="label">成功率</div><div class="value">{{ "%.1f"|format(report.success_rate * 100) }}%</div></div>
+    </div>
+    <div class="charts">
+        <div class="chart-box">
+            <h3>📈 7 日成功率趋势</h3>
+            <div class="chart" id="trendChart"></div>
+        </div>
+        <div class="chart-box">
+            <h3>🍩 当日状态分布</h3>
+            <div class="chart" id="pieChart"></div>
+        </div>
+        <div class="chart-box">
+            <h3>⚠️ 失败原因 Top N</h3>
+            <div class="chart" id="reasonChart"></div>
+        </div>
+        <div class="chart-box">
+            <h3>📋 历史数据汇总</h3>
+            <div class="chart" id="historyChart"></div>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <h3>失败原因明细</h3>
+        <table>
+            <thead><tr><th>#</th><th>失败原因</th><th>数量</th></tr></thead>
+            <tbody>
+            {% for r in report.failure_reasons %}
+            <tr><td>{{ loop.index }}</td><td>{{ r.fail_reason }}</td><td>{{ r.cnt }}</td></tr>
+            {% endfor %}
+            {% if not report.failure_reasons %}
+            <tr><td colspan="3" style="text-align:center;color:#999">无失败记录</td></tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <script>
+        var trendData = {{ trend_data | safe }};
+        var historyData = {{ history | safe }};
+        var statusData = [
+            { name: '成功', value: {{ report.success }} },
+            { name: '失败', value: {{ report.failed }} },
+            { name: '运行中', value: {{ report.running }} },
+            { name: '暂停', value: {{ report.paused }} },
+            { name: '取消', value: {{ report.cancelled }} }
+        ].filter(function(d) { return d.value > 0; });
+        var reasonData = [{% for r in report.failure_reasons %}{ name: '{{ r.fail_reason }}', value: {{ r.cnt }} },{% endfor %}];
+
+        function initChart(id, option) { var el = document.getElementById(id); if (el) { echarts.init(el).setOption(option); } }
+
+        initChart('trendChart', {
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: trendData.map(function(d) { return d.date.slice(5); }) },
+            yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
+            series: [{ data: trendData.map(function(d) { return (d.success_rate * 100).toFixed(1); }), type: 'line', smooth: true, areaStyle: { opacity: 0.1 }, itemStyle: { color: '#722ed1' } }],
+            grid: { left: 50, right: 20, top: 20, bottom: 30 }
+        });
+
+        initChart('pieChart', {
+            tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+            series: [{ type: 'pie', radius: ['45%', '75%'], data: statusData, label: { show: false }, emphasis: { label: { show: true } } }]
+        });
+
+        initChart('reasonChart', {
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: reasonData.map(function(d) { return d.name; }), axisLabel: { rotate: 30 } },
+            yAxis: { type: 'value', minInterval: 1 },
+            series: [{ data: reasonData.map(function(d) { return d.value; }), type: 'bar', itemStyle: { color: '#ff4d4f' } }],
+            grid: { left: 40, right: 20, top: 20, bottom: 60 }
+        });
+
+        initChart('historyChart', {
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['任务总数', '成功', '失败'], bottom: 0 },
+            xAxis: { type: 'category', data: historyData.map(function(d) { return d.date.slice(5); }) },
+            yAxis: { type: 'value', minInterval: 1 },
+            series: [
+                { name: '任务总数', data: historyData.map(function(d) { return d.total; }), type: 'bar', barGap: '10%', itemStyle: { color: '#1890ff', opacity: 0.6 } },
+                { name: '成功', data: historyData.map(function(d) { return d.success; }), type: 'bar', itemStyle: { color: '#52c41a' } },
+                { name: '失败', data: historyData.map(function(d) { return d.failed; }), type: 'bar', itemStyle: { color: '#ff4d4f' } }
+            ],
+            grid: { left: 50, right: 20, top: 20, bottom: 40 }
+        });
+    </script>
+</body>
+</html>
