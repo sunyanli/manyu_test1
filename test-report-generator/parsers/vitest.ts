@@ -3,6 +3,7 @@
  * 解析 Vitest --reporter=json 输出格式
  */
 
+import * as fs from 'fs';
 import { TestReport, TestStats, TestCaseResult, TestFileResult, ExecutionEnv, CoverageData, TestResultParser } from '../types';
 
 interface VitestAssertionResult {
@@ -72,9 +73,9 @@ const parser: TestResultParser = {
           };
           
           if (test.status === 'failed' && test.error) {
-            caseResult.error = test.error.message || 'Unknown error';
+            caseResult.error = truncateMessage(test.error.message || 'Unknown error', 500);
             if (test.error.stack) {
-              caseResult.stackTrace = truncateStack(test.error.stack, 500);
+              caseResult.stackTrace = truncateStack(test.error.stack, 10);
             }
             failures.push(caseResult);
           }
@@ -136,15 +137,15 @@ const parser: TestResultParser = {
   }
 };
 
-function truncateStack(stack: string, maxLength: number): string {
-  if (stack.length <= maxLength) return stack;
+function truncateMessage(message: string, maxLength: number): string {
+  if (message.length <= maxLength) return message;
+  return message.slice(0, maxLength) + '... (截断)';
+}
+
+function truncateStack(stack: string, maxLines: number): string {
   const lines = stack.split('\n');
-  let result = '';
-  for (const line of lines) {
-    if (result.length + line.length + 1 > maxLength) break;
-    result += (result ? '\n' : '') + line;
-  }
-  return result + '\n... (截断)';
+  if (lines.length <= maxLines) return stack;
+  return lines.slice(0, maxLines).join('\n') + '\n... (截断)';
 }
 
 function calculateStats(cases: TestCaseResult[]): TestStats {
@@ -154,6 +155,109 @@ function calculateStats(cases: TestCaseResult[]): TestStats {
   const skipped = cases.filter(c => c.status === 'skipped').length;
   const duration = cases.reduce((sum, c) => sum + c.duration, 0);
   return { total, passed, failed, skipped, passRate: total > 0 ? Math.round((passed / total) * 100) : 0, duration };
+}
+
+// ========== Coverage 解析 ==========
+
+interface IstanbulFileCoverage {
+  s: Record<string, number>;
+  b: Record<string, number[]>;
+  f: Record<string, number>;
+  statementMap: Record<string, { start: { line: number; column: number }; end: { line: number; column: number } }>;
+}
+
+type IstanbulCoverageMap = Record<string, IstanbulFileCoverage>;
+
+export interface CoverageFileDetail {
+  file: string;
+  statements: number;
+  branches: number;
+  functions: number;
+  lines: number;
+}
+
+export interface CoverageResult {
+  summary: CoverageData;
+  lowCoverageFiles: CoverageFileDetail[];
+}
+
+export function parseCoverage(coverageDir?: string): CoverageResult | null {
+  const dir = coverageDir || 'coverage';
+  const coveragePath = `${dir}/coverage-final.json`;
+
+  let raw: string;
+  try {
+    raw = fs.readFileSync(coveragePath, 'utf-8');
+  } catch {
+    return null;
+  }
+
+  let data: IstanbulCoverageMap;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+
+  const fileDetails: CoverageFileDetail[] = [];
+  let totalStatements = 0, coveredStatements = 0;
+  let totalBranches = 0, coveredBranches = 0;
+  let totalFunctions = 0, coveredFunctions = 0;
+  let totalLines = 0, coveredLines = 0;
+
+  for (const [filePath, fc] of Object.entries(data)) {
+    const stmtKeys = Object.keys(fc.s);
+    const stmtCovered = stmtKeys.filter(k => fc.s[k] > 0).length;
+    totalStatements += stmtKeys.length;
+    coveredStatements += stmtCovered;
+
+    const branchKeys = Object.keys(fc.b);
+    const branchCovered = branchKeys.filter(k => fc.b[k].some(v => v > 0)).length;
+    totalBranches += branchKeys.length;
+    coveredBranches += branchCovered;
+
+    const funcKeys = Object.keys(fc.f);
+    const funcCovered = funcKeys.filter(k => fc.f[k] > 0).length;
+    totalFunctions += funcKeys.length;
+    coveredFunctions += funcCovered;
+
+    const allLines = new Set<number>();
+    const coveredLineSet = new Set<number>();
+    for (const key of stmtKeys) {
+      const sm = fc.statementMap[key];
+      if (sm) {
+        for (let l = sm.start.line; l <= sm.end.line; l++) {
+          allLines.add(l);
+          if (fc.s[key] > 0) coveredLineSet.add(l);
+        }
+      }
+    }
+    totalLines += allLines.size;
+    coveredLines += coveredLineSet.size;
+
+    fileDetails.push({
+      file: filePath,
+      statements: stmtKeys.length > 0 ? Math.round((stmtCovered / stmtKeys.length) * 100) : 0,
+      branches: branchKeys.length > 0 ? Math.round((branchCovered / branchKeys.length) * 100) : 0,
+      functions: funcKeys.length > 0 ? Math.round((funcCovered / funcKeys.length) * 100) : 0,
+      lines: allLines.size > 0 ? Math.round((coveredLineSet.size / allLines.size) * 100) : 0,
+    });
+  }
+
+  const lowCoverageFiles = fileDetails.filter(
+    f => f.statements < 50 || f.branches < 50 || f.functions < 50 || f.lines < 50
+  );
+
+  return {
+    summary: {
+      statements: totalStatements > 0 ? Math.round((coveredStatements / totalStatements) * 100) : 0,
+      branches: totalBranches > 0 ? Math.round((coveredBranches / totalBranches) * 100) : 0,
+      functions: totalFunctions > 0 ? Math.round((coveredFunctions / totalFunctions) * 100) : 0,
+      lines: totalLines > 0 ? Math.round((coveredLines / totalLines) * 100) : 0,
+      available: true,
+    },
+    lowCoverageFiles,
+  };
 }
 
 export default parser;

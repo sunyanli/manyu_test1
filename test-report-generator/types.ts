@@ -30,12 +30,22 @@ export interface TestStats {
   duration: number;
 }
 
+export interface CoverageFileDetail {
+  file: string;
+  statements: number;
+  branches: number;
+  functions: number;
+  lines: number;
+}
+
 export interface CoverageData {
   statements?: number;
   branches?: number;
   functions?: number;
   lines?: number;
   available: boolean;
+  /** 低覆盖率文件清单（<50% 阈值） */
+  lowCoverageFiles?: CoverageFileDetail[];
 }
 
 export interface ExecutionEnv {
@@ -55,6 +65,8 @@ export interface TestReport {
   coverage: CoverageData;
   sourceFile?: string;
   conclusion: 'pass' | 'fail' | 'partial';
+  /** 用户配置的通过率阈值（可选），低于此值时结论标记为不达标 */
+  failThreshold?: number;
 }
 
 export interface TestResultParser {

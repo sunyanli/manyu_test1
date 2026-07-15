@@ -12,8 +12,15 @@ const parsers: TestResultParser[] = [jestParser, vitestParser, junitParser];
 /**
  * 检测项目使用的测试框架
  */
-export async function detectTestFramework(): Promise<{ framework: string; command: string }[]> {
-  const detected: { framework: string; command: string }[] = [];
+export interface DetectedFramework {
+  framework: string;
+  command: string;
+  resultFile?: string;
+  coverageCommand?: string;
+}
+
+export async function detectTestFramework(): Promise<DetectedFramework[]> {
+  const detected: DetectedFramework[] = [];
   
   // 检测 Jest
   const hasJestConfig = await fileExists('jest.config.js') || 
@@ -32,6 +39,27 @@ export async function detectTestFramework(): Promise<{ framework: string; comman
     detected.push({ framework: 'vitest', command: 'npx vitest run --reporter=json --outputFile=test-results.json' });
   }
   
+  // 检测 pytest
+  const hasPytestConfig = await fileExists('pytest.ini') ||
+                           await fileExists('setup.cfg') ||
+                           await fileExists('conftest.py');
+  let hasPytestInPyproject = false;
+  const hasPyproject = await fileExists('pyproject.toml');
+  if (hasPyproject) {
+    try {
+      const pyprojectContent = await readFile('pyproject.toml');
+      hasPytestInPyproject = pyprojectContent.includes('[tool.pytest.ini_options]');
+    } catch { /* pyproject.toml 读取失败，忽略 */ }
+  }
+  if (hasPytestConfig || hasPytestInPyproject) {
+    detected.push({
+      framework: 'pytest',
+      command: 'python -m pytest --junitxml=test-results.xml',
+      resultFile: 'test-results.xml',
+      coverageCommand: 'python -m pytest --junitxml=test-results.xml --cov --cov-report=xml --cov-report=json',
+    });
+  }
+
   // 默认：如果没检测到，假设是 Jest
   if (detected.length === 0) {
     detected.push({ framework: 'jest', command: 'npx jest --json --outputFile=test-results.json' });
@@ -76,17 +104,42 @@ export async function runTestsAndGenerateReport(options: TestReportOptions): Pro
   console.log(`执行测试命令: ${command}`);
   
   // 尝试解析结果文件
-  const resultFile = 'test-results.json';
+  const resultFile = targetFramework.resultFile || 'test-results.json';
   try {
     return await parseResultFile(resultFile);
   } catch (e) {
-    // 如果是 JUnit XML
-    const junitFile = 'test-results.xml';
-    if (await fileExists(junitFile)) {
-      return parseResultFile(junitFile);
+    // 如果是 JUnit XML（兜底）
+    if (resultFile !== 'test-results.xml') {
+      const junitFile = 'test-results.xml';
+      if (await fileExists(junitFile)) {
+        return parseResultFile(junitFile);
+      }
     }
     throw new Error(`测试执行失败或结果文件未生成: ${e instanceof Error ? e.message : '未知错误'}`);
   }
+}
+
+/**
+ * 检测项目类型（Python / Node.js 等）
+ */
+export async function detectProjectType(): Promise<string> {
+  // Python 项目特征
+  const hasPyproject = await fileExists('pyproject.toml');
+  const hasSetupCfg = await fileExists('setup.cfg');
+  const hasPytestIni = await fileExists('pytest.ini');
+  const hasConftest = await fileExists('conftest.py');
+
+  if (hasPyproject || hasSetupCfg || hasPytestIni || hasConftest) {
+    return 'python';
+  }
+
+  // Node.js 项目特征
+  const hasPackageJson = await fileExists('package.json');
+  if (hasPackageJson) {
+    return 'node';
+  }
+
+  return 'unknown';
 }
 
 // 辅助函数（占位实现）

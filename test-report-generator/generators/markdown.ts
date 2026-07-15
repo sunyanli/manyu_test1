@@ -36,6 +36,14 @@ export function generateMarkdownReport(report: TestReport): string {
   lines.push(`| 总耗时 | ${formatDuration(report.summary.duration)} |`);
   lines.push(`| 整体结论 | ${report.conclusion === 'pass' ? '✅ 通过' : report.conclusion === 'fail' ? '❌ 失败' : '⚠️ 部分'} |`);
   lines.push('');
+
+  // fail_threshold 达标检查
+  if (report.failThreshold !== undefined && report.failThreshold > 0) {
+    const passRate = report.summary.passRate;
+    const thresholdMet = passRate >= report.failThreshold;
+    lines.push(`| 质量门禁 | ${thresholdMet ? '✅ 达标' : '❌ 不达标'}（通过率 ${passRate}% ${thresholdMet ? '≥' : '<'} 阈值 ${report.failThreshold}%） |`);
+    lines.push('');
+  }
   
   // 失败用例分析
   if (report.failures.length > 0) {
@@ -53,13 +61,14 @@ export function generateMarkdownReport(report: TestReport): string {
       lines.push('');
       lines.push('**错误信息**:');
       lines.push('```');
-      lines.push(failure.error || '未获取');
+      const truncatedError = truncateText(failure.error || '未获取', 500);
+      lines.push(truncatedError);
       lines.push('```');
       lines.push('');
       if (failure.stackTrace) {
         lines.push('**堆栈摘要**:');
         lines.push('```');
-        lines.push(failure.stackTrace);
+        lines.push(truncateStackTrace(failure.stackTrace));
         lines.push('```');
         lines.push('');
       }
@@ -101,7 +110,7 @@ export function generateMarkdownReport(report: TestReport): string {
   }
   
   if (totalCases > maxCases) {
-    lines.push(`> 用例总数 ${totalCases} 超过 ${maxCases} 条，已截断展示。`);
+    lines.push(`> ... 及其他 ${totalCases - maxCases} 条用例，完整明细见原始结果文件`);
     lines.push('');
   }
   
@@ -117,6 +126,18 @@ export function generateMarkdownReport(report: TestReport): string {
     if (report.coverage.branches !== undefined) lines.push(`| 分支覆盖率 | ${report.coverage.branches}% |`);
     if (report.coverage.functions !== undefined) lines.push(`| 函数覆盖率 | ${report.coverage.functions}% |`);
     lines.push('');
+
+    // 低覆盖率文件清单
+    if (report.coverage.lowCoverageFiles && report.coverage.lowCoverageFiles.length > 0) {
+      lines.push('### 低覆盖率文件（<50%）');
+      lines.push('');
+      lines.push('| 文件 | 语句 | 分支 | 函数 | 行 |');
+      lines.push('|------|------|------|------|------|');
+      for (const f of report.coverage.lowCoverageFiles) {
+        lines.push(`| ${f.file} | ${f.statements}% | ${f.branches}% | ${f.functions}% | ${f.lines}% |`);
+      }
+      lines.push('');
+    }
   } else {
     lines.push('**未获取**');
     lines.push('');
@@ -129,7 +150,7 @@ export function generateMarkdownReport(report: TestReport): string {
     lines.push(`- **原始结果文件**: \`${report.sourceFile}\``);
   }
   lines.push(`- **报告版本**: ${report.version}`);
-  lines.push(`- **生成工具**: Test Report Generator v1.0.0`);
+  lines.push(`- **生成工具**: Test Report Generator v2.0.0`);
   lines.push('');
   
   return lines.join('\n');
@@ -158,6 +179,38 @@ function formatDuration(ms: number): string {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
   return `${minutes}m ${seconds}s`;
+}
+
+/**
+ * 截断文本至指定最大长度
+ */
+function truncateText(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + '... (截断)';
+}
+
+/**
+ * 截断堆栈信息：保留前 5 行 + 第一个匹配项目源码路径的行（最多 10 行）
+ */
+function truncateStackTrace(stack: string): string {
+  const lines = stack.split('\n');
+  if (lines.length <= 10) return stack;
+
+  const result: string[] = [];
+  result.push(...lines.slice(0, 5));
+
+  // 向后扫描到第一个匹配项目源码路径的行（排除 node_modules）
+  for (let i = 5; i < Math.min(lines.length, 10); i++) {
+    const line = lines[i];
+    if (line.includes('node_modules') || line.includes('internal/')) continue;
+    result.push(line);
+    break;
+  }
+
+  if (result.length < lines.length) {
+    result.push('... (截断，完整堆栈见原始结果文件)');
+  }
+  return result.join('\n');
 }
 
 export default { generate: generateMarkdownReport, name: 'markdown', extension: 'md' };
