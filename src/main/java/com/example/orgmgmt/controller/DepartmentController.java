@@ -9,6 +9,7 @@ import com.example.orgmgmt.entity.Department;
 import com.example.orgmgmt.service.DepartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class DepartmentController {
     /**
      * 获取部门树
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'DEPT_MANAGER')")
     @GetMapping("/tree")
     public ApiResponse<List<DepartmentDTO>> getTree() {
         List<DepartmentDTO> tree = departmentService.getTree();
@@ -35,6 +37,7 @@ public class DepartmentController {
     /**
      * 获取指定部门的子部门列表（懒加载）
      */
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'DEPT_MANAGER')")
     @GetMapping("/{id}/children")
     public ApiResponse<List<DepartmentDTO>> getChildren(@PathVariable Long id) {
         List<DepartmentDTO> children = departmentService.getChildren(id);
@@ -44,6 +47,7 @@ public class DepartmentController {
     /**
      * 创建部门
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ApiResponse<Department> create(@Valid @RequestBody DepartmentCreateRequest request) {
         Department dept = departmentService.create(request);
@@ -53,6 +57,7 @@ public class DepartmentController {
     /**
      * 更新部门
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ApiResponse<Department> update(@PathVariable Long id, @Valid @RequestBody DepartmentUpdateRequest request) {
         Department dept = departmentService.update(id, request);
@@ -62,6 +67,7 @@ public class DepartmentController {
     /**
      * 删除部门（逻辑删除）
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ApiResponse<String> delete(@PathVariable Long id) {
         departmentService.delete(id);
@@ -71,6 +77,7 @@ public class DepartmentController {
     /**
      * 移动部门
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/move")
     public ApiResponse<String> move(@PathVariable Long id, @Valid @RequestBody DepartmentMoveRequest request) {
         departmentService.move(id, request);
