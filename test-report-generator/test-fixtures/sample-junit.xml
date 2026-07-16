@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Python Tests" tests="30" failures="3" errors="1" skipped="1" time="12.345">
+  <testsuite name="tests.test_auth" tests="10" failures="2" errors="0" skipped="0" time="5.123">
+    <testcase classname="tests.test_auth.TestAuth" name="test_login_success" time="0.123"/>
+    <testcase classname="tests.test_auth.TestAuth" name="test_login_wrong_password" time="0.456">
+      <failure message="AssertionError: Expected 401, got 200" type="AssertionError">
+        AssertionError: Expected 401, got 200
+        File "tests/test_auth.py", line 42, in test_login_wrong_password
+          assert response.status_code == 401
+      </failure>
+    </testcase>
+    <testcase classname="tests.test_auth.TestAuth" name="test_token_expiry" time="0.789">
+      <failure message="ValueError: Invalid token format" type="ValueError">
+        ValueError: Invalid token format
+        File "tests/test_auth.py", line 78, in test_token_expiry
+          decode_token(expired_token)
+      </failure>
+    </testcase>
+    <testcase classname="tests.test_auth.TestAuth" name="test_logout" time="0.200"/>
+  </testsuite>
+  <testsuite name="tests.test_api" tests="20" failures="1" errors="1" skipped="1" time="7.222">
+    <testcase classname="tests.test_api.TestAPI" name="test_get_users" time="0.500"/>
+    <testcase classname="tests.test_api.TestAPI" name="test_create_user" time="0.600">
+      <failure message="KeyError: 'user_id'" type="KeyError">
+        KeyError: 'user_id'
+        File "tests/test_api.py", line 105, in test_create_user
+          user_id = response.json()['user_id']
+      </failure>
+    </testcase>
+    <testcase classname="tests.test_api.TestAPI" name="test_delete_user" time="0.300">
+      <error message="ConnectionError" type="ConnectionError">
+        ConnectionError: Database connection refused
+        File "tests/test_api.py", line 120, in test_delete_user
+          db.connect()
+      </error>
+    </testcase>
+    <testcase classname="tests.test_api.TestAPI" name="test_timeout_handling" time="0.100">
+      <skipped message="Not implemented yet"/>
+    </testcase>
+  </testsuite>
+</testsuites>

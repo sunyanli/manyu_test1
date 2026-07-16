@@ -151,6 +151,7 @@ def parse_junit_xml(file_path: str) -> Dict[str, Any]:
                     "duration": tc_time,
                 })
             elif skipped_elem is not None:
+                skipped += 1
                 full_name = f"{tc_classname}.{tc_name}" if tc_classname else tc_name
                 suite_tests.append({
                     "name": full_name,

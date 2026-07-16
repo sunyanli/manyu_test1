@@ -1,0 +1,61 @@
+{
+  "numTotalTests": 42,
+  "numPassedTests": 35,
+  "numFailedTests": 5,
+  "numPendingTests": 2,
+  "testResults": [
+    {
+      "name": "src/utils/math.test.ts",
+      "status": "failed",
+      "startTime": 1715782400000,
+      "endTime": 1715782405000,
+      "assertionResults": [
+        {
+          "title": "should add two numbers correctly",
+          "status": "passed",
+          "duration": 2,
+          "ancestorTitles": ["Math", "add"],
+          "fullName": "Math add should add two numbers correctly"
+        },
+        {
+          "title": "should throw on division by zero",
+          "status": "failed",
+          "duration": 5,
+          "ancestorTitles": ["Math", "divide"],
+          "fullName": "Math divide should throw on division by zero",
+          "failureMessages": ["Error: Division by zero\n    at divide (src/utils/math.ts:15:11)\n    at Object.<anonymous> (src/utils/math.test.ts:42:5)"]
+        },
+        {
+          "title": "should handle negative numbers",
+          "status": "passed",
+          "duration": 1,
+          "ancestorTitles": ["Math", "add"],
+          "fullName": "Math add should handle negative numbers"
+        }
+      ]
+    },
+    {
+      "name": "src/components/Button.test.tsx",
+      "status": "failed",
+      "startTime": 1715782400000,
+      "endTime": 1715782408000,
+      "assertionResults": [
+        {
+          "title": "renders correctly with default props",
+          "status": "passed",
+          "duration": 10,
+          "ancestorTitles": ["Button"],
+          "fullName": "Button renders correctly with default props"
+        },
+        {
+          "title": "calls onClick handler when clicked",
+          "status": "failed",
+          "duration": 3,
+          "ancestorTitles": ["Button"],
+          "fullName": "Button calls onClick handler when clicked",
+          "failureMessages": ["Expected mock function to have been called, but it was not called."]
+        }
+      ]
+    }
+  ]
+}
