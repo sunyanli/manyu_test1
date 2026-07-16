@@ -163,23 +163,23 @@ export class DepartmentService {
   }
 
   /**
-   * 递归更新所有子孙部门的 path
+   * 批量更新所有子孙部门的 path（使用 SQL REPLACE 避免 N+1 问题）
    */
   private async updateChildrenPath(
     oldParentPath: string,
     newParentPath: string,
   ): Promise<void> {
-    // 所有 path 以 oldParentPath + '-' 开头的都需要更新
-    const allDescendants = await this.departmentRepo
-      .createQueryBuilder('department')
-      .where('department.path LIKE :oldPathPattern', {
-        oldPathPattern: oldParentPath + '-%',
-      })
-      .getMany();
+    if (oldParentPath === newParentPath) return;
 
-    for (const child of allDescendants) {
-      child.path = newParentPath + child.path.substring(oldParentPath.length);
-      await this.departmentRepo.save(child);
-    }
+    await this.departmentRepo
+      .createQueryBuilder()
+      .update()
+      .set({
+        path: () => `REPLACE(path, '${oldParentPath}-', '${newParentPath}-')`,
+      })
+      .where('path LIKE :oldPattern', {
+        oldPattern: `${oldParentPath}-%`,
+      })
+      .execute();
   }
 }

@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsString, Min } from 'class-validator';
+import { IsOptional, IsInt, IsString, IsIn, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryEmployeeDto {
@@ -27,4 +27,14 @@ export class QueryEmployeeDto {
   @IsOptional()
   @IsString()
   keyword?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['employeeNo', 'name', 'entryDate', 'position', 'createdAt'])
+  sortBy?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['ASC', 'DESC', 'asc', 'desc'])
+  sortOrder?: 'ASC' | 'DESC' = 'ASC';
 }
