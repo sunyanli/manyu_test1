@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算法演示与可视化平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px 32px; border-radius: 12px; margin-bottom: 24px; }
+        .header h1 { font-size: 24px; font-weight: 600; }
+        .header p { margin-top: 8px; opacity: 0.9; font-size: 14px; }
+        .tab-container { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 24px; }
+        .tabs { display: flex; border-bottom: 2px solid #e8ecf1; }
+        .tab-btn { flex: 1; padding: 16px 24px; border: none; background: none; font-size: 15px; font-weight: 500; cursor: pointer; color: #8899aa; transition: all 0.2s; }
+        .tab-btn:hover { color: #667eea; background: #f8f9fe; }
+        .tab-btn.active { color: #667eea; border-bottom: 3px solid #667eea; margin-bottom: -2px; }
+        .tab-content { display: none; padding: 24px; }
+        .tab-content.active { display: block; }
+        .input-area { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .input-area label { font-size: 14px; font-weight: 500; color: #555; }
+        .input-area input, .input-area select { padding: 8px 12px; border: 1px solid #d0d5dd; border-radius: 6px; font-size: 14px; outline: none; transition: border-color 0.2s; }
+        .input-area input:focus, .input-area select:focus { border-color: #667eea; }
+        .btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #667eea; color: #fff; }
+        .btn-primary:hover { background: #5a6fd8; }
+        .btn-success { background: #52c41a; color: #fff; }
+        .btn-success:hover { background: #49b018; }
+        .result-area { background: #f8f9fe; border: 1px solid #e8ecf1; border-radius: 8px; padding: 16px; min-height: 80px; font-family: 'Courier New', monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; background: #f8f9fe; border-top: 1px solid #e8ecf1; }
+        .export-btn { padding: 8px 20px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .export-btn:hover { border-color: #667eea; color: #667eea; }
+        .chart-container { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 24px; }
+        .chart-controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+        .chart-controls label { font-size: 14px; font-weight: 500; color: #555; }
+        .chart-controls select { padding: 8px 12px; border: 1px solid #d0d5dd; border-radius: 6px; font-size: 14px; outline: none; }
+        .chart-controls select:focus { border-color: #667eea; }
+        .chart-box { width: 100%; height: 400px; }
+        .loading { text-align: center; padding: 40px; color: #8899aa; }
+        .error-msg { color: #ff4d4f; padding: 12px; }
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .tab-btn { font-size: 13px; padding: 12px; }
+            .input-area { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🚀 算法演示与可视化平台</h1>
+        <p>HelloWorld · 哈希算法 · 冒泡排序 — 在线演示与调用分析</p>
+    </div>
+
+    <!-- 三 Tab 页面 -->
+    <div class="tab-container">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="hello">👋 HelloWorld</button>
+            <button class="tab-btn" data-tab="hash">🔐 哈希算法</button>
+            <button class="tab-btn" data-tab="bubble">🔄 冒泡排序</button>
+        </div>
+
+        <!-- Tab 1: HelloWorld -->
+        <div class="tab-content active" id="tab-hello">
+            <div class="input-area">
+                <label>姓名：</label>
+                <input type="text" id="hello-name" placeholder="输入姓名（可选）" value="World">
+                <button class="btn btn-primary" onclick="callHello()">执行</button>
+            </div>
+            <div class="result-area" id="hello-result">点击「执行」按钮调用 HelloWorld 接口</div>
+        </div>
+
+        <!-- Tab 2: 哈希算法 -->
+        <div class="tab-content" id="tab-hash">
+            <div class="input-area">
+                <label>输入：</label>
+                <input type="text" id="hash-input" placeholder="输入字符串" value="Hello World">
+                <label>算法：</label>
+                <select id="hash-algorithm">
+                    <option value="SHA-256">SHA-256</option>
+                    <option value="MD5">MD5</option>
+                    <option value="SHA-512">SHA-512</option>
+                </select>
+                <button class="btn btn-primary" onclick="callHash()">执行</button>
+            </div>
+            <div class="result-area" id="hash-result">点击「执行」按钮调用哈希算法接口</div>
+        </div>
+
+        <!-- Tab 3: 冒泡排序 -->
+        <div class="tab-content" id="tab-bubble">
+            <div class="input-area">
+                <label>数组：</label>
+                <input type="text" id="bubble-array" placeholder="逗号分隔，如 5,3,8,4,2" value="5,3,8,4,2">
+                <label>顺序：</label>
+                <select id="bubble-order">
+                    <option value="asc">升序</option>
+                    <option value="desc">降序</option>
+                </select>
+                <button class="btn btn-primary" onclick="callBubbleSort()">执行</button>
+            </div>
+            <div class="result-area" id="bubble-result">点击「执行」按钮调用冒泡排序接口</div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <span style="font-size:14px;color:#8899aa;">📊 导出结果</span>
+            <div>
+                <select id="export-api" style="padding:6px 10px;border:1px solid #d0d5dd;border-radius:4px;margin-right:8px;font-size:14px;">
+                    <option value="hello">HelloWorld</option>
+                    <option value="hash">哈希算法</option>
+                    <option value="bubble-sort">冒泡排序</option>
+                    <option value="all">全部</option>
+                </select>
+                <select id="export-format" style="padding:6px 10px;border:1px solid #d0d5dd;border-radius:4px;margin-right:8px;font-size:14px;">
+                    <option value="xlsx">Excel (.xlsx)</option>
+                    <option value="csv">CSV (.csv)</option>
+                </select>
+                <button class="export-btn" onclick="exportData()">📥 导出</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 报表看板 -->
+    <div class="chart-container">
+        <h3 style="margin-bottom:16px;font-size:18px;">📈 调用统计报表</h3>
+        <div class="chart-controls">
+            <label>维度：</label>
+            <select id="chart-dimension" onchange="refreshChart()">
+                <option value="user_type">人员类型</option>
+                <option value="user_level">人员层级</option>
+                <option value="user_dept">人员部门</option>
+            </select>
+            <label>图表类型：</label>
+            <select id="chart-type" onchange="refreshChart()">
+                <option value="bar">柱状图</option>
+                <option value="pie">饼图</option>
+                <option value="line">折线图</option>
+            </select>
+            <button class="btn btn-primary" onclick="refreshChart()">刷新</button>
+        </div>
+        <div class="chart-box" id="chart-main"></div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://localhost:8080/api';
+    let chartInstance = null;
+
+    // ========== Tab 切换 ==========
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+        });
+    });
+
+    // ========== API 调用 ==========
+    async function callHello() {
+        const name = document.getElementById('hello-name').value || '';
+        const resultEl = document.getElementById('hello-result');
+        resultEl.textContent = '加载中...';
+        try {
+            const res = await fetch(API_BASE + '/hello?name=' + encodeURIComponent(name));
+            const json = await res.json();
+            resultEl.textContent = JSON.stringify(json, null, 2);
+        } catch (e) {
+            resultEl.textContent = '⚠️ 请求失败：' + e.message;
+        }
+    }
+
+    async function callHash() {
+        const input = document.getElementById('hash-input').value;
+        const algorithm = document.getElementById('hash-algorithm').value;
+        const resultEl = document.getElementById('hash-result');
+        resultEl.textContent = '加载中...';
+        try {
+            const res = await fetch(API_BASE + '/hash', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ input, algorithm })
+            });
+            const json = await res.json();
+            resultEl.textContent = JSON.stringify(json, null, 2);
+        } catch (e) {
+            resultEl.textContent = '⚠️ 请求失败：' + e.message;
+        }
+    }
+
+    async function callBubbleSort() {
+        const raw = document.getElementById('bubble-array').value;
+        const order = document.getElementById('bubble-order').value;
+        const array = raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        const resultEl = document.getElementById('bubble-result');
+        resultEl.textContent = '加载中...';
+        try {
+            const res = await fetch(API_BASE + '/bubble-sort', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ array, order })
+            });
+            const json = await res.json();
+            resultEl.textContent = JSON.stringify(json, null, 2);
+        } catch (e) {
+            resultEl.textContent = '⚠️ 请求失败：' + e.message;
+        }
+    }
+
+    // ========== 导出 ==========
+    function exportData() {
+        const apiName = document.getElementById('export-api').value;
+        const format = document.getElementById('export-format').value;
+        const url = API_BASE + '/export?apiName=' + encodeURIComponent(apiName) + '&format=' + encodeURIComponent(format);
+        window.open(url, '_blank');
+    }
+
+    // ========== 图表 ==========
+    function initChart() {
+        const dom = document.getElementById('chart-main');
+        chartInstance = echarts.init(dom);
+        window.addEventListener('resize', () => chartInstance && chartInstance.resize());
+        refreshChart();
+    }
+
+    async function refreshChart() {
+        const dimension = document.getElementById('chart-dimension').value;
+        const chartType = document.getElementById('chart-type').value;
+        const loadingEl = document.getElementById('chart-main');
+
+        try {
+            const res = await fetch(API_BASE + '/tracking/statistics?dimension=' + encodeURIComponent(dimension) + '&chartType=' + encodeURIComponent(chartType));
+            const json = await res.json();
+            if (json.code !== 'SUCCESS') {
+                showError('获取统计数据失败: ' + json.msg);
+                return;
+            }
+            renderChart(json.data);
+        } catch (e) {
+            showError('请求统计接口失败: ' + e.message);
+        }
+    }
+
+    function renderChart(data) {
+        if (!chartInstance) {
+            chartInstance = echarts.init(document.getElementById('chart-main'));
+        }
+        const labels = data.labels || [];
+        const seriesData = data.series && data.series.length > 0 ? data.series[0].data : [];
+        const chartType = data.chartType || 'bar';
+
+        let option;
+
+        if (chartType === 'pie') {
+            option = {
+                title: { text: '调用分布 - ' + data.dimension, left: 'center', textStyle: { fontSize: 16 } },
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                legend: { bottom: 10, data: labels },
+                series: [{
+                    type: 'pie',
+                    radius: ['30%', '60%'],
+                    center: ['50%', '50%'],
+                    data: labels.map((label, i) => ({ name: label, value: seriesData[i] || 0 })),
+                    emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.5)' } },
+                    label: { formatter: '{b}: {c}' }
+                }]
+            };
+        } else if (chartType === 'line') {
+            option = {
+                title: { text: '调用趋势 - ' + data.dimension, left: 'center', textStyle: { fontSize: 16 } },
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: labels },
+                yAxis: { type: 'value' },
+                series: [{
+                    type: 'line',
+                    data: seriesData,
+                    smooth: true,
+                    lineStyle: { width: 3, color: '#667eea' },
+                    areaStyle: { color: 'rgba(102,126,234,0.15)' },
+                    itemStyle: { color: '#667eea' }
+                }]
+            };
+        } else {
+            // bar
+            option = {
+                title: { text: '调用统计 - ' + data.dimension, left: 'center', textStyle: { fontSize: 16 } },
+                tooltip: { trigger: 'axis' },
+                xAxis: { type: 'category', data: labels },
+                yAxis: { type: 'value' },
+                series: [{
+                    type: 'bar',
+                    data: seriesData,
+                    barWidth: '40%',
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#667eea' },
+                            { offset: 1, color: '#764ba2' }
+                        ])
+                    }
+                }]
+            };
+        }
+
+        chartInstance.setOption(option, true);
+        chartInstance.resize();
+    }
+
+    function showError(msg) {
+        if (!chartInstance) {
+            chartInstance = echarts.init(document.getElementById('chart-main'));
+        }
+        chartInstance.setOption({
+            title: { text: msg, left: 'center', top: 'center', textStyle: { color: '#ff4d4f', fontSize: 14 } }
+        }, true);
+    }
+
+    // 页面加载后初始化图表
+    document.addEventListener('DOMContentLoaded', initChart);
+    // 首次加载自动调用 HelloWorld
+    document.addEventListener('DOMContentLoaded', () => setTimeout(callHello, 300));
+</script>
+</body>
+</html>
