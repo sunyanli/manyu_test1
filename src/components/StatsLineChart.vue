@@ -56,8 +56,18 @@ async function fetchData() {
   }
 }
 
-onMounted(fetchData)
-onUnmounted(() => { if (chartInstance) chartInstance.dispose() })
+onMounted(() => {
+  fetchData()
+  window.addEventListener('resize', handleResize)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (chartInstance) chartInstance.dispose()
+})
+
+function handleResize() {
+  if (chartInstance) chartInstance.resize()
+}
 </script>
 
 <style scoped>

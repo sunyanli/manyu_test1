@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { getHash, trackEvent } from '../api/index.js'
 
 const inputText = ref('Hello World')
@@ -50,6 +50,8 @@ async function fetchData() {
     loading.value = false
   }
 }
+
+onMounted(fetchData)
 </script>
 
 <style scoped>

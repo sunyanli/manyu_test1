@@ -23,12 +23,18 @@ async function handleExport() {
   exportError.value = null
   try {
     const url = getExportUrl(props.activeTab)
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error('导出失败')
+    }
+    const blob = await response.blob()
     const link = document.createElement('a')
-    link.href = url
+    link.href = URL.createObjectURL(blob)
     link.download = `${props.activeTab}_export.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(link.href)
   } catch (err) {
     exportError.value = '导出失败，请稍后重试'
   } finally {

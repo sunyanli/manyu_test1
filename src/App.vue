@@ -19,9 +19,9 @@
 
     <!-- Tab 内容区 -->
     <div class="tab-content-area">
-      <TabHelloWorld v-if="activeTab === 'helloworld'" />
-      <TabHash v-else-if="activeTab === 'hash'" />
-      <TabBubbleSort v-else-if="activeTab === 'bubble-sort'" />
+      <KeepAlive>
+        <component :is="currentTabComponent" />
+      </KeepAlive>
     </div>
 
     <!-- 导出按钮 -->
@@ -40,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import TabHelloWorld from './components/TabHelloWorld.vue'
 import TabHash from './components/TabHash.vue'
 import TabBubbleSort from './components/TabBubbleSort.vue'
@@ -55,6 +55,14 @@ const tabs = [
   { key: 'hash', label: '哈希算法' },
   { key: 'bubble-sort', label: '冒泡排序' }
 ]
+
+const tabComponents = {
+  helloworld: TabHelloWorld,
+  hash: TabHash,
+  'bubble-sort': TabBubbleSort
+}
+
+const currentTabComponent = computed(() => tabComponents[activeTab.value])
 </script>
 
 <style scoped>

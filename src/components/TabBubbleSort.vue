@@ -24,7 +24,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { postBubbleSort, trackEvent } from '../api/index.js'
 
 const arrayInput = ref('3, 1, 4, 1, 5')
@@ -47,6 +47,8 @@ async function fetchData() {
     loading.value = false
   }
 }
+
+onMounted(fetchData)
 </script>
 
 <style scoped>
