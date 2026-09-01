@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API 调用与埋点追踪</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+.identity-bar { background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.identity-bar label { font-size: 13px; color: #666; display: block; margin-bottom: 4px; }
+.identity-bar input, .identity-bar select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; min-width: 120px; }
+.tabs { display: flex; gap: 0; margin-bottom: 0; }
+.tab-btn { flex: 1; padding: 12px; border: none; background: #e8e8e8; cursor: pointer; font-size: 14px; font-weight: 500; transition: background 0.2s; border-radius: 8px 8px 0 0; }
+.tab-btn.active { background: #fff; color: #1677ff; }
+.tab-content { background: #fff; padding: 24px; border-radius: 0 0 8px 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; display: none; }
+.tab-content.active { display: block; }
+.op-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
+.op-row input, .op-row select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; }
+.btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+.btn-primary { background: #1677ff; color: #fff; }
+.btn-primary:hover { background: #4096ff; }
+.btn-export { background: #52c41a; color: #fff; }
+.btn-export:hover { background: #73d13d; }
+.result-box { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 6px; padding: 16px; min-height: 60px; font-family: 'Courier New', monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+.chart-section { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.chart-controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.chart-controls select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; }
+.chart-container { max-width: 700px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="identity-bar">
+    <div><label>姓名 *</label><input type="text" id="userName" placeholder="请输入姓名" value="张三"></div>
+    <div><label>人员类型</label>
+      <select id="userType"><option value="正式员工">正式员工</option><option value="外包">外包</option><option value="实习生">实习生</option></select></div>
+    <div><label>人员层级</label>
+      <select id="userLevel"><option value="初级">初级</option><option value="中级" selected>中级</option><option value="高级">高级</option><option value="专家">专家</option></select></div>
+    <div><label>人员部门</label>
+      <select id="userDept"><option value="技术部" selected>技术部</option><option value="产品部">产品部</option><option value="运营部">运营部</option><option value="市场部">市场部</option></select></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('helloworld')">HelloWorld</button>
+    <button class="tab-btn" onclick="switchTab('hash')">Hash</button>
+    <button class="tab-btn" onclick="switchTab('bubblesort')">冒泡排序</button>
+  </div>
+
+  <div id="tab-helloworld" class="tab-content active">
+    <div class="op-row">
+      <button class="btn btn-primary" onclick="callHelloWorld()">执行</button>
+      <button class="btn btn-export" onclick="exportCSV('helloworld')">导出 CSV</button>
+    </div>
+    <div id="result-helloworld" class="result-box">点击"执行"查看结果</div>
+  </div>
+
+  <div id="tab-hash" class="tab-content">
+    <div class="op-row">
+      <select id="hashAlgo"><option value="sha256">SHA256</option><option value="md5">MD5</option><option value="sha1">SHA1</option></select>
+      <input type="text" id="hashText" placeholder="输入要哈希的文本" value="hello world" style="flex:1; min-width:200px;">
+      <button class="btn btn-primary" onclick="callHash()">执行</button>
+      <button class="btn btn-export" onclick="exportCSV('hash')">导出 CSV</button>
+    </div>
+    <div id="result-hash" class="result-box">点击"执行"查看结果</div>
+  </div>
+
+  <div id="tab-bubblesort" class="tab-content">
+    <div class="op-row">
+      <input type="text" id="sortArray" placeholder="输入数组，逗号分隔" value="5,3,8,4,2" style="flex:1; min-width:200px;">
+      <button class="btn btn-primary" onclick="callBubbleSort()">执行</button>
+      <button class="btn btn-export" onclick="exportCSV('bubblesort')">导出 CSV</button>
+    </div>
+    <div id="result-bubblesort" class="result-box">点击"执行"查看结果</div>
+  </div>
+
+  <div class="chart-section">
+    <h3 style="margin-bottom:12px;">调用情况报表</h3>
+    <div class="chart-controls">
+      <label>维度：<select id="chartDimension" onchange="refreshChart()">
+        <option value="type">人员类型</option>
+        <option value="level">人员层级</option>
+        <option value="dept">人员部门</option>
+        <option value="time">时间趋势</option>
+      </select></label>
+      <label>图表类型：<select id="chartType" onchange="refreshChart()">
+        <option value="bar">柱状图</option>
+        <option value="pie">饼图</option>
+        <option value="line">折线图</option>
+      </select></label>
+      <button class="btn btn-primary" onclick="refreshChart()">刷新</button>
+    </div>
+    <div class="chart-container"><canvas id="trackingChart"></canvas></div>
+  </div>
+
+</div>
+
+<script>
+const BASE = 'http://localhost:5000';
+
+function getHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'X-User-Name': document.getElementById('userName').value || 'anonymous',
+    'X-User-Type': document.getElementById('userType').value,
+    'X-User-Level': document.getElementById('userLevel').value,
+    'X-User-Dept': document.getElementById('userDept').value,
+  };
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector('.tab-btn[onclick*="' + tab + '"]').classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+async function callHelloWorld() {
+  const res = await fetch(BASE + '/api/helloworld', { headers: getHeaders() });
+  const data = await res.json();
+  document.getElementById('result-helloworld').textContent = JSON.stringify(data, null, 2);
+}
+
+async function callHash() {
+  const algo = document.getElementById('hashAlgo').value;
+  const text = document.getElementById('hashText').value;
+  const res = await fetch(BASE + '/api/hash', {
+    method: 'POST', headers: getHeaders(),
+    body: JSON.stringify({ algorithm: algo, text: text }),
+  });
+  const data = await res.json();
+  document.getElementById('result-hash').textContent = JSON.stringify(data, null, 2);
+}
+
+async function callBubbleSort() {
+  const raw = document.getElementById('sortArray').value;
+  const arr = raw.split(',').map(s => Number(s.trim()));
+  const res = await fetch(BASE + '/api/bubblesort', {
+    method: 'POST', headers: getHeaders(),
+    body: JSON.stringify({ array: arr }),
+  });
+  const data = await res.json();
+  document.getElementById('result-bubblesort').textContent = JSON.stringify(data, null, 2);
+}
+
+function exportCSV(type) {
+  const url = BASE + '/api/export?type=' + type;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = type + '_export.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+let chartInstance = null;
+
+async function refreshChart() {
+  const dim = document.getElementById('chartDimension').value;
+  const chartType = document.getElementById('chartType').value;
+  const res = await fetch(BASE + '/api/tracking?dimension=' + dim);
+  const json = await res.json();
+  const labels = json.data.map(d => dim === 'time' ? d.time : d.key);
+  const values = json.data.map(d => d.count);
+
+  const ctx = document.getElementById('trackingChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: chartType,
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '调用次数',
+        data: values,
+        backgroundColor: ['#1677ff','#52c41a','#faad14','#f5222d','#722ed1','#13c2c2','#eb2f96'],
+        borderColor: '#1677ff',
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display: true, text: '按' + (dim === 'time' ? '时间' : dim === 'type' ? '人员类型' : dim === 'level' ? '人员层级' : '人员部门') + '统计' }
+      }
+    }
+  });
+}
+
+refreshChart();
+</script>
+</body>
+</html>
