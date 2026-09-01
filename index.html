@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三接口演示平台</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>三接口演示平台</h1>
+
+        <!-- 用户信息 -->
+        <div class="user-info">
+            <label>调用人：</label>
+            <input type="text" id="callerName" value="zhangsan" placeholder="输入用户名">
+            <label>人员类型：</label>
+            <select id="userType">
+                <option value="developer">开发者</option>
+                <option value="manager">管理者</option>
+                <option value="tester">测试人员</option>
+                <option value="admin">管理员</option>
+            </select>
+            <label>人员层级：</label>
+            <select id="userLevel">
+                <option value="junior">初级</option>
+                <option value="mid" selected>中级</option>
+                <option value="senior">高级</option>
+                <option value="principal">资深</option>
+            </select>
+            <label>部门：</label>
+            <select id="department">
+                <option value="engineering">研发部</option>
+                <option value="product">产品部</option>
+                <option value="qa">测试部</option>
+                <option value="operations">运维部</option>
+            </select>
+        </div>
+
+        <!-- Tab 导航 -->
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="hello">HelloWorld</button>
+            <button class="tab-btn" data-tab="hash">哈希算法</button>
+            <button class="tab-btn" data-tab="sort">冒泡排序</button>
+        </div>
+
+        <!-- Tab: HelloWorld -->
+        <div class="tab-content active" id="tab-hello">
+            <div class="action-area">
+                <button class="btn" onclick="callHello()">调用 HelloWorld 接口</button>
+            </div>
+            <div class="result-area" id="result-hello">点击按钮查看结果</div>
+        </div>
+
+        <!-- Tab: 哈希算法 -->
+        <div class="tab-content" id="tab-hash">
+            <div class="action-area">
+                <label>输入文本：</label>
+                <input type="text" id="hashInput" value="Hello World" placeholder="输入要哈希的文本">
+                <label>算法选择：</label>
+                <select id="hashAlgorithm">
+                    <option value="sha256">SHA256</option>
+                    <option value="md5">MD5</option>
+                </select>
+                <button class="btn" onclick="callHash()" style="margin-top:8px;">调用哈希接口</button>
+            </div>
+            <div class="result-area" id="result-hash">输入文本并选择算法后点击按钮</div>
+        </div>
+
+        <!-- Tab: 冒泡排序 -->
+        <div class="tab-content" id="tab-sort">
+            <div class="action-area">
+                <label>输入数组（JSON格式，如 [5,3,8,4,2]）：</label>
+                <input type="text" id="sortInput" value="[5,3,8,4,2]" placeholder="输入数组">
+                <button class="btn" onclick="callSort()" style="margin-top:8px;">调用排序接口</button>
+            </div>
+            <div class="result-area" id="result-sort">输入数组后点击按钮</div>
+        </div>
+
+        <!-- 导出栏 -->
+        <div class="export-bar">
+            <label>导出数据：</label>
+            <select id="exportTab">
+                <option value="all">全部</option>
+                <option value="hello">HelloWorld</option>
+                <option value="hash">哈希算法</option>
+                <option value="sort">冒泡排序</option>
+            </select>
+            <button class="btn btn-export" onclick="exportData()">导出埋点 CSV</button>
+            <span style="margin:0 8px;color:#999;">|</span>
+            <button class="btn" onclick="exportResultData()" style="background:#722ed1;">导出当前结果 CSV</button>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="chart-section">
+            <h3>📊 调用统计报表</h3>
+            <div class="chart-controls">
+                <label>图表维度：</label>
+                <select id="chartDimension">
+                    <option value="user_type">人员类型</option>
+                    <option value="user_level">人员层级</option>
+                    <option value="department">人员部门</option>
+                </select>
+                <button class="btn" onclick="refreshCharts()">刷新图表</button>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-box">
+                    <h4>折线图（趋势）</h4>
+                    <div id="chart-line" class="chart-canvas"></div>
+                </div>
+                <div class="chart-box">
+                    <h4>饼图（分布）</h4>
+                    <div id="chart-pie" class="chart-canvas"></div>
+                </div>
+                <div class="chart-box">
+                    <h4>柱状图（对比）</h4>
+                    <div id="chart-bar" class="chart-canvas"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

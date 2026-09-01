@@ -1,0 +1,48 @@
+/* 页面基础样式 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; padding: 20px; }
+
+.container { max-width: 1200px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); padding: 24px; }
+
+/* 用户信息栏 */
+.user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.user-info label { font-weight: 600; }
+.user-info input, .user-info select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+
+/* Tab 导航 */
+.tab-nav { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px; }
+.tab-btn { padding: 12px 24px; cursor: pointer; background: none; border: none; font-size: 15px; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+.tab-btn:hover { color: #1890ff; }
+.tab-btn.active { color: #1890ff; border-bottom-color: #1890ff; font-weight: 600; }
+
+/* Tab 内容 */
+.tab-content { display: none; padding: 16px 0; }
+.tab-content.active { display: block; }
+
+/* 操作区 */
+.action-area { margin-bottom: 16px; }
+.action-area label { display: block; margin-bottom: 6px; font-weight: 500; }
+.action-area input, .action-area select, .action-area textarea { width: 100%; max-width: 400px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.action-area textarea { min-height: 80px; resize: vertical; }
+.btn { padding: 8px 20px; background: #1890ff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.btn:hover { background: #40a9ff; }
+.btn:disabled { background: #ccc; cursor: not-allowed; }
+
+/* 结果展示 */
+.result-area { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 8px; padding: 16px; margin-top: 12px; min-height: 60px; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 13px; }
+
+/* 导出按钮区 */
+.export-bar { display: flex; align-items: center; gap: 12px; margin: 20px 0; padding: 12px 0; border-top: 1px solid #e8e8e8; border-bottom: 1px solid #e8e8e8; }
+.export-bar select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.btn-export { background: #52c41a; }
+.btn-export:hover { background: #73d13d; }
+
+/* 图表区域 */
+.chart-section { margin-top: 24px; }
+.chart-section h3 { margin-bottom: 16px; }
+.chart-controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.chart-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.chart-box { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 12px; min-height: 320px; }
+.chart-box h4 { text-align: center; margin-bottom: 8px; color: #555; }
+.chart-canvas { width: 100%; height: 280px; }
