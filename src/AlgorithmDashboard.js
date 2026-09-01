@@ -3,6 +3,20 @@ import ReactECharts from 'echarts-for-react';
 
 const API_BASE = 'http://localhost:8080';
 
+/** 获取当前用户 ID（从 SSO 或登录态获取，此处使用默认值） */
+function getUserId() {
+  return localStorage.getItem('userId') || 'anonymous';
+}
+
+/** 带 X-User-Id 头的 fetch 封装 */
+function apiFetch(url, options) {
+  const headers = {
+    'X-User-Id': getUserId(),
+    ...(options && options.headers),
+  };
+  return fetch(url, { ...options, headers });
+}
+
 // ==================== Tab 组件 ====================
 
 function HelloWorldTab() {
@@ -12,7 +26,7 @@ function HelloWorldTab() {
   const handleCall = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/algorithm/helloworld`);
+      const res = await apiFetch(`${API_BASE}/api/algorithm/helloworld`);
       const data = await res.json();
       setResult(data);
     } catch (e) {
@@ -41,7 +55,7 @@ function HashTab() {
   const handleCall = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/algorithm/hash`, {
+      const res = await apiFetch(`${API_BASE}/api/algorithm/hash`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input }),
@@ -83,7 +97,7 @@ function BubbleSortTab() {
     setLoading(true);
     try {
       const arr = input.split(',').map((s) => parseInt(s.trim(), 10)).filter((n) => !isNaN(n));
-      const res = await fetch(`${API_BASE}/api/algorithm/bubble-sort`, {
+      const res = await apiFetch(`${API_BASE}/api/algorithm/bubble-sort`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ array: arr, order }),
@@ -135,7 +149,7 @@ function ReportPanel() {
 
     try {
       if (chartType === 'line') {
-        const res = await fetch(`${API_BASE}/api/report/call-stats`, {
+        const res = await apiFetch(`${API_BASE}/api/report/call-stats`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -149,7 +163,7 @@ function ReportPanel() {
         setLineData(data);
         setDimData(null);
       } else {
-        const res = await fetch(`${API_BASE}/api/report/dimension-stats`, {
+        const res = await apiFetch(`${API_BASE}/api/report/dimension-stats`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -254,7 +268,7 @@ export default function AlgorithmDashboard() {
     const exportTypeMap = { helloworld: 'helloworld', hash: 'hash', bubbleSort: 'bubble_sort' };
     const exportType = exportTypeMap[activeTab];
     try {
-      const res = await fetch(`${API_BASE}/api/export/data`, {
+      const res = await apiFetch(`${API_BASE}/api/export/data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ exportType }),
