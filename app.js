@@ -129,17 +129,17 @@ function exportResultData() {
     }
 
     const content = resultDiv.textContent;
-    let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
-    csvContent += 'Tab,内容\n';
-    csvContent += `${tabName},"${content.replace(/"/g, '""')}"\n`;
+    const csvContent = '\uFEFFTab,内容\n' + `${tabName},"${content.replace(/"/g, '""')}"\n`;
 
-    const encodedUri = encodeURI(csvContent);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', `result_${tabName}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
 // ==================== 图表 ====================
