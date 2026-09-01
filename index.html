@@ -43,8 +43,7 @@
             <button class="tab-btn active" data-tab="hello">HelloWorld</button>
             <button class="tab-btn" data-tab="hash">哈希算法</button>
             <button class="tab-btn" data-tab="sort">冒泡排序</button>
-            <button class="tab-btn" data-tab="weather">🌤️ 天气看板</button>
-        </div>
+            </div>
 
         <!-- Tab: HelloWorld -->
         <div class="tab-content active" id="tab-hello">
@@ -77,42 +76,6 @@
                 <button class="btn" onclick="callSort()" style="margin-top:8px;">调用排序接口</button>
             </div>
             <div class="result-area" id="result-sort">输入数组后点击按钮</div>
-        </div>
-
-        <!-- Tab: 天气看板 -->
-        <div class="tab-content" id="tab-weather">
-            <div class="weather-header">
-                <h2>🌤️ 杭州未来7天天气预报</h2>
-                <span class="weather-update-time" id="weatherUpdateTime">加载中...</span>
-            </div>
-
-            <!-- 天气摘要 -->
-            <div class="weather-summary" id="weatherSummary">
-                <div class="summary-item"><span class="summary-label">平均高温</span><span class="summary-value" id="summaryHigh">--</span><span class="summary-unit">°C</span></div>
-                <div class="summary-item"><span class="summary-label">平均低温</span><span class="summary-value" id="summaryLow">--</span><span class="summary-unit">°C</span></div>
-                <div class="summary-item"><span class="summary-label">☀️ 晴好天数</span><span class="summary-value" id="summarySunny">--</span><span class="summary-unit">天</span></div>
-                <div class="summary-item"><span class="summary-label">🌧️ 降雨天数</span><span class="summary-value" id="summaryRainy">--</span><span class="summary-unit">天</span></div>
-            </div>
-
-            <!-- 7天天气卡片 -->
-            <div class="weather-cards" id="weatherCards">
-                <!-- 由 JavaScript 动态渲染 -->
-            </div>
-
-            <!-- 天气趋势图表 -->
-            <div class="chart-section" style="margin-top:16px;">
-                <h3>📈 气温趋势图</h3>
-                <div class="weather-chart-grid">
-                    <div class="chart-box">
-                        <h4>🌡️ 高温/低温趋势</h4>
-                        <div id="weather-temp-chart" class="chart-canvas" style="height:260px;"></div>
-                    </div>
-                    <div class="chart-box">
-                        <h4>🌧️ 降雨概率分布</h4>
-                        <div id="weather-rain-chart" class="chart-canvas" style="height:260px;"></div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- 导出栏 -->
