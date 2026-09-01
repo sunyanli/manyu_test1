@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三接口演示平台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>三接口演示平台</h1>
+    </header>
+
+    <!-- 用户模拟区 -->
+    <section class="user-simulator">
+        <h3>用户模拟</h3>
+        <div class="user-presets">
+            <button class="preset-btn active" data-user='{"id":"u001","name":"张三","dept":"技术部","level":"P6","type":"正式员工"}'>张三 (技术部/P6)</button>
+            <button class="preset-btn" data-user='{"id":"u002","name":"李四","dept":"产品部","level":"P7","type":"正式员工"}'>李四 (产品部/P7)</button>
+            <button class="preset-btn" data-user='{"id":"u003","name":"王五","dept":"技术部","level":"P5","type":"外包"}'>王五 (技术部/P5)</button>
+            <button class="preset-btn" data-user='{"id":"u004","name":"赵六","dept":"设计部","level":"P6","type":"实习生"}'>赵六 (设计部/P6)</button>
+        </div>
+        <div class="user-custom">
+            <label>ID: <input id="userId" type="text" value="u001"></label>
+            <label>姓名: <input id="userName" type="text" value="张三"></label>
+            <label>部门: <input id="userDept" type="text" value="技术部"></label>
+            <label>层级: <input id="userLevel" type="text" value="P6"></label>
+            <label>类型: <input id="userType" type="text" value="正式员工"></label>
+        </div>
+    </section>
+
+    <!-- Tab 区域 -->
+    <section class="tab-area">
+        <div class="tab-bar">
+            <button class="tab-btn active" data-tab="helloworld">helloworld</button>
+            <button class="tab-btn" data-tab="hash">哈希算法</button>
+            <button class="tab-btn" data-tab="bubble-sort">冒泡排序</button>
+            <button id="exportBtn" class="export-btn">导出 helloworld 记录</button>
+        </div>
+
+        <!-- helloworld Tab -->
+        <div class="tab-content active" id="tab-helloworld">
+            <div class="input-area">
+                <button id="btn-helloworld" class="action-btn">执行</button>
+            </div>
+            <div class="result-area">
+                <h4>结果</h4>
+                <pre id="result-helloworld"></pre>
+            </div>
+        </div>
+
+        <!-- 哈希算法 Tab -->
+        <div class="tab-content" id="tab-hash">
+            <div class="input-area">
+                <input id="input-hash" type="text" placeholder="输入要哈希的文本">
+                <button id="btn-hash" class="action-btn">计算哈希</button>
+            </div>
+            <div class="result-area">
+                <h4>结果</h4>
+                <pre id="result-hash"></pre>
+            </div>
+        </div>
+
+        <!-- 冒泡排序 Tab -->
+        <div class="tab-content" id="tab-bubble-sort">
+            <div class="input-area">
+                <input id="input-bubble" type="text" placeholder="输入数字，逗号分隔 (如: 5,3,8,4,2)">
+                <button id="btn-bubble" class="action-btn">排序</button>
+            </div>
+            <div class="result-area">
+                <h4>结果</h4>
+                <pre id="result-bubble"></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- 可视化报表 -->
+    <section class="report-area">
+        <h3>调用统计报表</h3>
+        <div class="report-controls">
+            <div class="dimension-group">
+                <span>维度：</span>
+                <button class="dim-btn active" data-dim="dept">人员部门</button>
+                <button class="dim-btn" data-dim="level">人员层级</button>
+                <button class="dim-btn" data-dim="user_type">人员类型</button>
+            </div>
+            <div class="chart-type-group">
+                <span>图表：</span>
+                <button class="chart-btn active" data-chart="line">折线图</button>
+                <button class="chart-btn" data-chart="pie">饼图</button>
+                <button class="chart-btn" data-chart="bar">柱状图</button>
+            </div>
+        </div>
+        <div id="chartContainer" class="chart-container"></div>
+    </section>
+
+    <footer>
+        <p>后端地址: <span id="backendUrl">http://localhost:8000</span></p>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/charts.js"></script>
+</body>
+</html>
