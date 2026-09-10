@@ -29,6 +29,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .chart-controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .chart-controls select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; }
 .chart-container { max-width: 700px; margin: 0 auto; }
+.todo-form { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.todo-form input { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; flex: 1; min-width: 160px; }
+.todo-list { display: flex; flex-direction: column; gap: 10px; }
+.todo-item { background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.todo-item-body { flex: 1; }
+.todo-item-name { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 4px; }
+.todo-item-desc { font-size: 13px; color: #888; }
+.todo-item-time { font-size: 12px; color: #bbb; margin-top: 6px; }
+.todo-empty { text-align: center; color: #bbb; padding: 40px 0; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -48,6 +57,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <button class="tab-btn active" onclick="switchTab('helloworld')">HelloWorld</button>
     <button class="tab-btn" onclick="switchTab('hash')">Hash</button>
     <button class="tab-btn" onclick="switchTab('bubblesort')">冒泡排序</button>
+    <button class="tab-btn" onclick="switchTab('todo')">📋 To-Do</button>
   </div>
 
   <div id="tab-helloworld" class="tab-content active">
@@ -75,6 +85,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <button class="btn btn-export" onclick="exportCSV('bubblesort')">导出 CSV</button>
     </div>
     <div id="result-bubblesort" class="result-box">点击"执行"查看结果</div>
+  </div>
+
+  <div id="tab-todo" class="tab-content">
+    <div class="todo-form">
+      <input type="text" id="todoName" placeholder="待办名称" maxlength="100">
+      <input type="text" id="todoDesc" placeholder="待办描述（可选）" maxlength="500">
+      <button class="btn btn-primary" onclick="createTodo()">➕ 创建</button>
+    </div>
+    <div id="todo-list" class="todo-list"></div>
   </div>
 
   <div class="chart-section">
@@ -189,6 +208,64 @@ async function refreshChart() {
     }
   });
 }
+
+// ── To-Do ──────────────────────────────────────────────
+const TODO_KEY = 'aiwork_todos';
+
+function loadTodos() {
+  try { return JSON.parse(localStorage.getItem(TODO_KEY) || '[]'); }
+  catch (e) { return []; }
+}
+
+function saveTodos(todos) {
+  localStorage.setItem(TODO_KEY, JSON.stringify(todos));
+}
+
+function renderTodos() {
+  const todos = loadTodos();
+  const list = document.getElementById('todo-list');
+  if (!todos.length) {
+    list.innerHTML = '<div class="todo-empty">暂无待办事项，快来创建一个吧 ✨</div>';
+    return;
+  }
+  list.innerHTML = todos.map((t, i) =>
+    '<div class="todo-item">' +
+      '<div class="todo-item-body">' +
+        '<div class="todo-item-name">' + escapeHtml(t.name) + '</div>' +
+        (t.desc ? '<div class="todo-item-desc">' + escapeHtml(t.desc) + '</div>' : '') +
+        '<div class="todo-item-time">' + t.createdAt + '</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
+function createTodo() {
+  const nameEl = document.getElementById('todoName');
+  const descEl = document.getElementById('todoDesc');
+  const name = nameEl.value.trim();
+  if (!name) { alert('请输入待办名称'); nameEl.focus(); return; }
+  const desc = descEl.value.trim();
+  const todos = loadTodos();
+  todos.unshift({
+    name: name,
+    desc: desc || '',
+    createdAt: new Date().toLocaleString('zh-CN'),
+  });
+  saveTodos(todos);
+  nameEl.value = '';
+  descEl.value = '';
+  renderTodos();
+  nameEl.focus();
+}
+
+// 首次渲染
+renderTodos();
 
 refreshChart();
 </script>
