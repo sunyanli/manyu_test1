@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
+import TodoTab from './TodoTab';
 
 const API_BASE = 'http://localhost:8080';
 
@@ -293,6 +294,7 @@ export default function AlgorithmDashboard() {
     { key: 'helloworld', label: 'Hello World' },
     { key: 'hash', label: '哈希算法' },
     { key: 'bubbleSort', label: '冒泡排序' },
+    { key: 'todo', label: '待办事项' },
   ];
 
   return (
@@ -325,6 +327,7 @@ export default function AlgorithmDashboard() {
       {activeTab === 'helloworld' && <HelloWorldTab />}
       {activeTab === 'hash' && <HashTab />}
       {activeTab === 'bubbleSort' && <BubbleSortTab />}
+      {activeTab === 'todo' && <TodoTab />}
 
       {/* 报表区域 */}
       <ReportPanel />
