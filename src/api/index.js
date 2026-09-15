@@ -16,7 +16,17 @@ const api = axios.create({
 
 // 响应拦截器：统一处理错误
 api.interceptors.response.use(
-  response => response.data,
+  response => {
+    const data = response.data
+    // 业务错误检测：HTTP 200 但业务层失败
+    if (data && data.result && data.result !== 'OK' && data.result !== 'SUCCESS') {
+      return Promise.reject({
+        error_code: data.result,
+        message: data.msg || data.message || '业务处理失败'
+      })
+    }
+    return data
+  },
   error => {
     if (error.response && error.response.data) {
       return Promise.reject(error.response.data)
@@ -52,4 +62,22 @@ export function getStats(dimension) {
 
 export function getExportUrl(tab) {
   return `/api/export?tab=${tab}&format=csv`
+}
+
+/**
+ * 创建待办事项
+ * @param {string} itemName - 事项名称（1~200 字符，不能为空）
+ * @returns {Promise<Object>} 创建结果，包含新建事项的详细信息
+ */
+export function createTodoItem(itemName) {
+  return api.post('/todo', { item_name: itemName })
+}
+
+/**
+ * 查询待办事项列表
+ * @param {string} [status] - 可选筛选条件，合法值：'PENDING' | 'COMPLETED' | 'CANCELLED'
+ * @returns {Promise<Object>} 待办事项列表，包含 data 数组
+ */
+export function listTodoItems(status) {
+  return api.get('/todo', { params: status ? { status } : {} })
 }

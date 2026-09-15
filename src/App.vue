@@ -2,7 +2,7 @@
   <div class="app-container">
     <header class="app-header">
       <h1>三接口演示系统</h1>
-      <p class="subtitle">Helloworld · 哈希算法 · 冒泡排序</p>
+      <p class="subtitle">Helloworld · 哈希算法 · 冒泡排序 · 待办事项</p>
     </header>
 
     <!-- Tab 导航 -->
@@ -44,6 +44,7 @@ import { ref, computed } from 'vue'
 import TabHelloWorld from './components/TabHelloWorld.vue'
 import TabHash from './components/TabHash.vue'
 import TabBubbleSort from './components/TabBubbleSort.vue'
+import TabTodo from './components/TabTodo.vue'
 import ExportButton from './components/ExportButton.vue'
 import StatsLineChart from './components/StatsLineChart.vue'
 import StatsPieChart from './components/StatsPieChart.vue'
@@ -53,13 +54,15 @@ const activeTab = ref('helloworld')
 const tabs = [
   { key: 'helloworld', label: 'Helloworld' },
   { key: 'hash', label: '哈希算法' },
-  { key: 'bubble-sort', label: '冒泡排序' }
+  { key: 'bubble-sort', label: '冒泡排序' },
+  { key: 'todo', label: '待办事项' }
 ]
 
 const tabComponents = {
   helloworld: TabHelloWorld,
   hash: TabHash,
-  'bubble-sort': TabBubbleSort
+  'bubble-sort': TabBubbleSort,
+  todo: TabTodo
 }
 
 const currentTabComponent = computed(() => tabComponents[activeTab.value])
