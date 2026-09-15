@@ -1,0 +1,9 @@
+{
+  "blocker_count": 0,
+  "review_terminated": true,
+  "termination_reason": "No .java files in change scope. dtazziboot-java-code-review skill only applies to Java code. All 4 changed files are .vue and .js (frontend-only).",
+  "total_files": 4,
+  "java_files": 0,
+  "non_java_files": 4,
+  "generated_at": "2026-09-15T00:00:00Z"
+}
