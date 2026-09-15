@@ -80,6 +80,7 @@ function statusLabel(status) {
 }
 
 async function handleCreate() {
+  if (creating.value) return // 显式防抖 guard
   const name = itemName.value.trim()
   if (!name) {
     createError.value = '事项名称不能为空'
