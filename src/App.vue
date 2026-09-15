@@ -44,6 +44,7 @@ import { ref, computed } from 'vue'
 import TabHelloWorld from './components/TabHelloWorld.vue'
 import TabHash from './components/TabHash.vue'
 import TabBubbleSort from './components/TabBubbleSort.vue'
+import TabTodo from './components/TabTodo.vue'
 import ExportButton from './components/ExportButton.vue'
 import StatsLineChart from './components/StatsLineChart.vue'
 import StatsPieChart from './components/StatsPieChart.vue'
@@ -53,13 +54,15 @@ const activeTab = ref('helloworld')
 const tabs = [
   { key: 'helloworld', label: 'Helloworld' },
   { key: 'hash', label: '哈希算法' },
-  { key: 'bubble-sort', label: '冒泡排序' }
+  { key: 'bubble-sort', label: '冒泡排序' },
+  { key: 'todo', label: '待办事项' }
 ]
 
 const tabComponents = {
   helloworld: TabHelloWorld,
   hash: TabHash,
-  'bubble-sort': TabBubbleSort
+  'bubble-sort': TabBubbleSort,
+  todo: TabTodo
 }
 
 const currentTabComponent = computed(() => tabComponents[activeTab.value])
