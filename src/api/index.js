@@ -53,3 +53,11 @@ export function getStats(dimension) {
 export function getExportUrl(tab) {
   return `/api/export?tab=${tab}&format=csv`
 }
+
+export function createTodoItem(itemName) {
+  return api.post('/todo', { item_name: itemName })
+}
+
+export function listTodoItems(status) {
+  return api.get('/todo', { params: status ? { status } : {} })
+}
