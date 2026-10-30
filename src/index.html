@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接口演示与统计报表</title>
+    <!-- Ant Design 5 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/antd@5.12.8/dist/reset.css">
+    <!-- Recharts -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/dayjs@1/dayjs.min.js"></script>
+    <script src="https://unpkg.com/antd@5.12.8/dist/antd.min.js"></script>
+    <script src="https://unpkg.com/@ant-design/icons@5/dist/index.umd.min.js"></script>
+    <script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
+    <!-- Babel standalone for JSX -->
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        #root { min-height: 100vh; }
+        .page-header { background: #fff; padding: 16px 24px; border-bottom: 1px solid #e8e8e8; display: flex; justify-content: space-between; align-items: center; }
+        .page-header h2 { margin: 0; color: #1a1a1a; font-size: 20px; }
+        .tab-content { padding: 24px; max-width: 900px; margin: 0 auto; }
+        .result-card { margin-top: 16px; background: #fafafa; border-radius: 8px; padding: 16px; border: 1px solid #e8e8e8; }
+        .result-card pre { white-space: pre-wrap; word-break: break-all; font-size: 13px; margin: 0; }
+        .stats-section { padding: 24px; }
+        .stats-section h3 { margin-bottom: 16px; color: #1a1a1a; }
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .charts-grid .chart-box { background: #fff; padding: 16px; border-radius: 8px; border: 1px solid #e8e8e8; }
+        .charts-grid .chart-box.full-width { grid-column: 1 / -1; }
+        .charts-grid h4 { margin-bottom: 12px; color: #555; font-weight: 500; }
+        .loading-mask { display: flex; justify-content: center; align-items: center; min-height: 200px; }
+        @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+        const { Button, Tabs, Input, Select, Card, message, DatePicker, Space, Spin, Empty, Statistic, Divider } = antd;
+        const { DownloadOutlined, PlayCircleOutlined, ReloadOutlined } = icons;
+
+        const API_BASE = 'http://localhost:8080/api/demo';
+        const antdIcons = antd;
+
+        // ============ 请求工具 ============
+        async function fetchApi(url, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-User-Id': 'demo_user',
+                'X-User-Name': '演示用户',
+                ...options.headers,
+            };
+            const res = await fetch(url, { ...options, headers });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            if (data.code !== 'OK') throw new Error(data.msg || '请求失败');
+            return data.data;
+        }
+
+        async function downloadExport(type) {
+            const res = await fetch(`${API_BASE}/export?type=${type}`, {
+                headers: { 'X-User-Id': 'demo_user', 'X-User-Name': '演示用户' },
+            });
+            if (!res.ok) throw new Error('导出失败');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `api_demo_${type}_${dayjs().format('YYYYMMDDHHmmss')}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            message.success(`${type} 导出成功`);
+        }
+
+        // ============ HelloWorld Tab ============
+        function HelloWorldTab() {
+            const [result, setResult] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const execute = async () => {
+                setLoading(true);
+                try {
+                    const data = await fetchApi(`${API_BASE}/hello`);
+                    setResult(data);
+                    message.success('HelloWorld 调用成功');
+                } catch (e) {
+                    message.error('调用失败: ' + e.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => { execute(); }, []);
+
+            return (
+                <div className="tab-content">
+                    <Card title="HelloWorld 接口演示" extra={<Button type="primary" icon={<PlayCircleOutlined />} onClick={execute} loading={loading}>重新调用</Button>}>
+                        <p style={{ color: '#666', marginBottom: 16 }}>此接口自动返回欢迎消息与时间戳，无需输入参数。</p>
+                        {result && (
+                            <div className="result-card">
+                                <p><strong>类型:</strong> {result.type}</p>
+                                <p><strong>消息:</strong> {result.message}</p>
+                                <p><strong>时间戳:</strong> {result.timestamp}</p>
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            );
+        }
+
+        // ============ 哈希算法 Tab ============
+        function HashTab() {
+            const [input, setInput] = useState('hello');
+            const [algorithm, setAlgorithm] = useState('SHA-256');
+            const [result, setResult] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const execute = async () => {
+                if (!input.trim()) { message.warning('请输入待计算文本'); return; }
+                setLoading(true);
+                try {
+                    const data = await fetchApi(`${API_BASE}/hash`, {
+                        method: 'POST',
+                        body: JSON.stringify({ input: input.trim(), algorithm }),
+                    });
+                    setResult(data);
+                    message.success('哈希计算完成');
+                } catch (e) {
+                    message.error('计算失败: ' + e.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="tab-content">
+                    <Card title="哈希算法演示" extra={<Button type="primary" icon={<PlayCircleOutlined />} onClick={execute} loading={loading}>计算哈希</Button>}>
+                        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>输入文本:</label>
+                                <Input.TextArea value={input} onChange={e => setInput(e.target.value)} rows={3} placeholder="请输入待计算哈希的文本" />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>算法选择:</label>
+                                <Select value={algorithm} onChange={setAlgorithm} style={{ width: 200 }}>
+                                    <Select.Option value="MD5">MD5</Select.Option>
+                                    <Select.Option value="SHA-1">SHA-1</Select.Option>
+                                    <Select.Option value="SHA-256">SHA-256</Select.Option>
+                                </Select>
+                            </div>
+                        </Space>
+                        {result && (
+                            <div className="result-card" style={{ marginTop: 16 }}>
+                                <p><strong>算法:</strong> {result.algorithm}</p>
+                                <p><strong>输入:</strong> {result.input}</p>
+                                <p><strong>哈希输出:</strong> <code style={{ wordBreak: 'break-all' }}>{result.output}</code></p>
+                                <p><strong>时间戳:</strong> {result.timestamp}</p>
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            );
+        }
+
+        // ============ 冒泡排序 Tab ============
+        function SortTab() {
+            const [input, setInput] = useState('5,3,8,1,9,2');
+            const [order, setOrder] = useState('asc');
+            const [result, setResult] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const execute = async () => {
+                const nums = input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                if (nums.length === 0) { message.warning('请输入有效的数字（逗号分隔）'); return; }
+                setLoading(true);
+                try {
+                    const data = await fetchApi(`${API_BASE}/sort`, {
+                        method: 'POST',
+                        body: JSON.stringify({ numbers: nums, order }),
+                    });
+                    setResult(data);
+                    message.success('排序完成');
+                } catch (e) {
+                    message.error('排序失败: ' + e.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="tab-content">
+                    <Card title="冒泡排序演示" extra={<Button type="primary" icon={<PlayCircleOutlined />} onClick={execute} loading={loading}>执行排序</Button>}>
+                        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>输入数字（逗号分隔）:</label>
+                                <Input value={input} onChange={e => setInput(e.target.value)} placeholder="例如: 5,3,8,1,9,2" />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>排序方向:</label>
+                                <Select value={order} onChange={setOrder} style={{ width: 150 }}>
+                                    <Select.Option value="asc">升序 (asc)</Select.Option>
+                                    <Select.Option value="desc">降序 (desc)</Select.Option>
+                                </Select>
+                            </div>
+                        </Space>
+                        {result && (
+                            <div className="result-card" style={{ marginTop: 16 }}>
+                                <p><strong>原始数组:</strong> [{result.original ? result.original.join(', ') : ''}]</p>
+                                <p><strong>排序结果:</strong> [{result.sorted ? result.sorted.join(', ') : ''}]</p>
+                                <p><strong>排序方向:</strong> {result.order}</p>
+                                <p><strong>交换次数:</strong> {result.swapCount}</p>
+                                <p><strong>时间戳:</strong> {result.timestamp}</p>
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            );
+        }
+
+        // ============ 统计报表组件 ============
+        const { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, ResponsiveContainer } = Recharts;
+
+        const PIE_COLORS = ['#1890ff', '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16'];
+
+        function ChartsSection({ data, dimension }) {
+            if (!data) return <Empty description="暂无调用数据" />;
+
+            const items = data.items || [];
+            const trend = data.trend || [];
+            const dimLabel = { personType: '人员类型', personLevel: '人员层级', personDept: '人员部门' }[dimension] || dimension;
+
+            return (
+                <div className="charts-grid">
+                    {/* 折线图 - 日趋势 */}
+                    <div className="chart-box">
+                        <h4>📈 日调用趋势（折线图）</h4>
+                        {trend.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={250}>
+                                <LineChart data={trend}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="date" fontSize={11} />
+                                    <YAxis fontSize={11} allowDecimals={false} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="callCount" name="调用次数" stroke="#1890ff" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : <Empty description="无趋势数据" />}
+                    </div>
+
+                    {/* 饼图 - 占比 */}
+                    <div className="chart-box">
+                        <h4>🥧 {dimLabel}占比（饼图）</h4>
+                        {items.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={250}>
+                                <PieChart>
+                                    <Pie data={items} dataKey="callCount" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                        {items.map((_, idx) => <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />)}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : <Empty description="无分桶数据" />}
+                    </div>
+
+                    {/* 柱状图 - 对比 */}
+                    <div className="chart-box full-width">
+                        <h4>📊 {dimLabel}调用次数对比（柱状图）</h4>
+                        {items.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={280}>
+                                <BarChart data={items}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" fontSize={11} />
+                                    <YAxis fontSize={11} allowDecimals={false} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="callCount" name="调用次数" fill="#1890ff" radius={[4, 4, 0, 0]}>
+                                        {items.map((_, idx) => <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />)}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : <Empty description="无对比数据" />}
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ 主页面 ============
+        function ApiDemoPage() {
+            const [activeTab, setActiveTab] = useState('hello');
+            const [exporting, setExporting] = useState(false);
+            const [statsData, setStatsData] = useState(null);
+            const [statsLoading, setStatsLoading] = useState(false);
+            const [dimension, setDimension] = useState('personType');
+            const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'day'), dayjs()]);
+
+            const handleExport = async () => {
+                setExporting(true);
+                try {
+                    await downloadExport(activeTab);
+                } catch (e) {
+                    message.error('导出失败: ' + e.message);
+                } finally {
+                    setExporting(false);
+                }
+            };
+
+            const loadStats = useCallback(async () => {
+                setStatsLoading(true);
+                try {
+                    const startDate = dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : '';
+                    const endDate = dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : '';
+                    const data = await fetchApi(`${API_BASE}/stats?dimension=${dimension}&startDate=${startDate}&endDate=${endDate}`);
+                    setStatsData(data);
+                } catch (e) {
+                    message.error('统计查询失败: ' + e.message);
+                    setStatsData(null);
+                } finally {
+                    setStatsLoading(false);
+                }
+            }, [dimension, dateRange]);
+
+            useEffect(() => {
+                loadStats();
+            }, [loadStats]);
+
+            const tabItems = [
+                { key: 'hello', label: 'HelloWorld', children: <HelloWorldTab /> },
+                { key: 'hash', label: '哈希算法', children: <HashTab /> },
+                { key: 'sort', label: '冒泡排序', children: <SortTab /> },
+            ];
+
+            return (
+                <div>
+                    <div className="page-header">
+                        <h2>接口演示中心</h2>
+                        <Button type="primary" icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
+                            导出当前 Tab
+                        </Button>
+                    </div>
+
+                    <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} style={{ background: '#fff', padding: '0 24px' }} />
+
+                    <Divider style={{ margin: '24px 0 0' }} />
+
+                    <div className="stats-section">
+                        <h3>📊 调用统计报表</h3>
+                        <Space style={{ marginBottom: 16 }} size="middle" wrap>
+                            <span style={{ fontWeight: 500 }}>统计维度:</span>
+                            <Select value={dimension} onChange={setDimension} style={{ width: 160 }}>
+                                <Select.Option value="personType">人员类型</Select.Option>
+                                <Select.Option value="personLevel">人员层级</Select.Option>
+                                <Select.Option value="personDept">人员部门</Select.Option>
+                            </Select>
+                            <span style={{ fontWeight: 500 }}>日期范围:</span>
+                            <DatePicker.RangePicker value={dateRange} onChange={(dates) => setDateRange(dates || [dayjs().subtract(7, 'day'), dayjs()])} />
+                            <Button icon={<ReloadOutlined />} onClick={loadStats} loading={statsLoading}>刷新</Button>
+                        </Space>
+
+                        {statsLoading ? (
+                            <div className="loading-mask"><Spin size="large" tip="加载统计数据..." /></div>
+                        ) : (
+                            <ChartsSection data={statsData} dimension={dimension} />
+                        )}
+                    </div>
+
+                    <div style={{ textAlign: 'center', padding: 24, color: '#999', fontSize: 12 }}>
+                        接口演示与统计报表 v1.0 · Powered by AiWork
+                    </div>
+                </div>
+            );
+        }
+
+        // ============ 挂载 ============
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ApiDemoPage />);
+
+        // 全局错误处理
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('未处理的 Promise 异常:', event.reason);
+        });
+    </script>
+</body>
+</html>
