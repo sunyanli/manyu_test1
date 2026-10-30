@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alipay.xchain.demo.dal.mapper.ApiCallRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.alipay.xchain.demo.dal.entity.ApiCallRecord">
+        <id column="id" property="id"/>
+        <result column="api_name" property="apiName"/>
+        <result column="caller_id" property="callerId"/>
+        <result column="caller_name" property="callerName"/>
+        <result column="person_type" property="personType"/>
+        <result column="person_level" property="personLevel"/>
+        <result column="person_dept" property="personDept"/>
+        <result column="call_time" property="callTime"/>
+        <result column="result_status" property="resultStatus"/>
+        <result column="result_summary" property="resultSummary"/>
+        <result column="gmt_create" property="gmtCreate"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, api_name, caller_id, caller_name, person_type, person_level, person_dept,
+        call_time, result_status, result_summary, gmt_create
+    </sql>
+
+    <resultMap id="StatsItemMap" type="com.alipay.xchain.demo.model.vo.StatsItemVO">
+        <result column="stat_name" property="name"/>
+        <result column="call_count" property="callCount"/>
+    </resultMap>
+
+    <resultMap id="StatsTrendMap" type="com.alipay.xchain.demo.model.vo.StatsTrendVO">
+        <result column="stat_date" property="date"/>
+        <result column="stat_name" property="name"/>
+        <result column="call_count" property="callCount"/>
+    </resultMap>
+
+    <!-- 维度列名仅来自 DimensionEnum 白名单，此处以 choose 静态展开，杜绝 SQL 注入 -->
+    <sql id="Dimension_Column">
+        <choose>
+            <when test="dimensionCode == 'personType'">person_type</when>
+            <when test="dimensionCode == 'personLevel'">person_level</when>
+            <when test="dimensionCode == 'personDept'">person_dept</when>
+            <otherwise>person_type</otherwise>
+        </choose>
+    </sql>
+
+    <sql id="Common_Where">
+        WHERE call_time &gt;= #{startTime}
+          AND call_time &lt; #{endTime}
+        <if test="apiName != null and apiName != ''">
+            AND api_name = #{apiName}
+        </if>
+    </sql>
+
+    <insert id="insert" parameterType="com.alipay.xchain.demo.dal.entity.ApiCallRecord"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO api_call_record (api_name, caller_id, caller_name, person_type, person_level,
+                                     person_dept, call_time, result_status, result_summary, gmt_create)
+        VALUES (#{apiName}, #{callerId}, #{callerName}, #{personType}, #{personLevel},
+                #{personDept}, #{callTime}, #{resultStatus}, #{resultSummary}, #{gmtCreate})
+    </insert>
+
+    <select id="countByDimension" resultMap="StatsItemMap">
+        SELECT COALESCE(<include refid="Dimension_Column"/>, '未知') AS stat_name,
+               COUNT(1) AS call_count
+        FROM api_call_record
+        <include refid="Common_Where"/>
+        GROUP BY <include refid="Dimension_Column"/>
+        ORDER BY COUNT(1) DESC
+    </select>
+
+    <select id="trendByDimension" resultMap="StatsTrendMap">
+        SELECT CAST(call_time AS DATE) AS stat_date,
+               COALESCE(<include refid="Dimension_Column"/>, '未知') AS stat_name,
+               COUNT(1) AS call_count
+        FROM api_call_record
+        <include refid="Common_Where"/>
+        GROUP BY CAST(call_time AS DATE), <include refid="Dimension_Column"/>
+        ORDER BY CAST(call_time AS DATE) ASC
+    </select>
+
+    <select id="selectForExport" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM api_call_record
+        <include refid="Common_Where"/>
+        ORDER BY call_time DESC
+    </select>
+
+</mapper>
